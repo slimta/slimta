@@ -19,28 +19,38 @@
 # THE SOFTWARE.
 #
 
-
 from __future__ import absolute_import
 
-from config import Config
-from celery import Celery
-from celery.loaders.app import AppLoader
+from argparse import ArgumentParser
+
+from .core import VERSION
+from .state import SlimtaState
 
 
-class SlimtaLoader(AppLoader):
-
-    def read_configuration(self):
-        try:
-            custom_config = os.environ['CELERY_CONFIG_MODULE']
-        except KeyError:
-            pass
-        else:
-            usercfg = Config(open(custom_config)
-            return DictAttribute(usercfg)
-        return {}
+def parse_args():
+    argparser = ArgumentParser(description='Configurable MTA based on the python-slimta libraries.')
+    argparser.add_argument('--version', action='version', version='%(prog)s '+VERSION)
+    argparser.add_argument('-c', '--config', metavar='FILE', default=None,
+                    help='Specifies a configuration file to read. If not given, the default locations ($HOME/.slimta.conf, f/etc/slimta.conf) are checked.')
+    argparser.add_argument('-a', '--attached', action='store_true',
+                    help='Prevent process from daemonizing, overriding configs.')
+    return argparser, argparser.parse_args()
 
 
-celery = Celery('slimta.app.celery', loader=SlimtaLoader))
+def main():
+    argparser, args = parse_args()
+
+    state = SlimtaState(args.attached)
+    if not state.load_config(args.config):
+        argparser.error('No configuration files found!')
+
+    state.start_celery_queues()
+
+    state.drop_privileges()
+    state.redirect_streams()
+    state.daemonize()
+
+    state.worker_loop()
 
 
 # vim:et:fdm=marker:sts=4:sw=4:ts=4

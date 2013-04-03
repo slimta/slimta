@@ -37,7 +37,8 @@ setup(name='slimta',
                         'python-slimta-celeryqueue',
                         'config'],
       entry_points={'console_scripts': [
-              'slimta = slimta.app.main:main'
+              'slimta = slimta.app.main:main',
+              'slimta-worker = slimta.app.worker:main',
           ]},
       classifiers=['Development Status :: 3 - Alpha',
                    'Topic :: Communications :: Email :: Mail Transport Agents',

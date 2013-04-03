@@ -23,6 +23,23 @@
 from __future__ import absolute_import
 
 from celery.loaders.app import AppLoader
+from celery import Celery
+from celery.datastructures import DictAttribute
+
+
+def _get_loader_class(settings):
+    class MyLoader(AppLoader):
+        def read_configuration(self):
+            if settings:
+                return DictAttribute(settings)
+            return {}
+    return MyLoader
+
+
+def get_app(cfg):
+    settings = cfg.get('celery_app')
+    loader_cls = _get_loader_class(settings)
+    return Celery('slimta.app.queue', loader=loader_cls)
 
 
 # vim:et:fdm=marker:sts=4:sw=4:ts=4

@@ -43,7 +43,7 @@ def parse_args():
 def main():
     argparser, args = parse_args()
 
-    state = SlimtaState(args.attached)
+    state = SlimtaState('worker', args.attached)
     if not state.load_config(args.config):
         argparser.error('No configuration files found!')
 

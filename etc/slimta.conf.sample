@@ -1,10 +1,18 @@
 
 process: {
-  daemon: False
-  user: slimta
-  group: slimta
-  stdout: '/var/log/slimta/stdout.log'
-  stderr: '/var/log/slimta/stderr.log'
+  slimta: {
+    daemon: True
+    user: slimta
+    group: slimta
+    stdout: '/dev/null'
+    stderr: '/dev/null'
+  }
+
+  worker: {
+    daemon: True
+    stdout: '/dev/null'
+    stderr: '/dev/null'
+  }
 }
 
 tls: {

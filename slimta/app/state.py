@@ -40,8 +40,9 @@ class SlimtaState(object):
     _global_config_files = [os.path.expanduser('~/.slimta.conf'),
                             '/etc/slimta.conf']
 
-    def __init__(self, attached=True):
+    def __init__(self, program, attached=True):
         self.config_file = os.getenv('SLIMTA_CONFIG', None)
+        self.program = program
         self.attached = attached
         self.ap = None
         self.cfg = None
@@ -80,22 +81,24 @@ class SlimtaState(object):
 
     def drop_privileges(self):
         if os.getuid() == 0:
-            user = self.cfg.process.get('user')
-            group = self.cfg.process.get('group')
+            process_options = self.cfg.process.get(self.program)
+            user = process_options.get('user')
+            group = process_options.get('group')
             slimta.system.drop_privileges(user, group)
         else:
             warnings.warn('Only superuser can drop privileges.')
 
     def redirect_streams(self):
-        flag = self.cfg.process.get('daemon', False)
+        process_options = self.cfg.process.get(self.program)
+        flag = process_options.get('daemon', False)
         if flag and not self.attached:
-            so = self.cfg.process.get('stdout')
-            se = self.cfg.process.get('stderr')
-            si = self.cfg.process.get('stdin')
+            so = process_options.get('stdout')
+            se = process_options.get('stderr')
+            si = process_options.get('stdin')
             slimta.system.redirect_stdio(so, se, si)
 
     def daemonize(self):
-        flag = self.cfg.process.get('daemon', False)
+        flag = self.cfg.process.get(self.program).get('daemon', False)
         if flag and not self.attached:
             slimta.system.daemonize()
 

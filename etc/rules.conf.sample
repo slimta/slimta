@@ -12,7 +12,7 @@ outbound: {
   banner: '{fqdn} ESMTP example.com Mail Submission Agent'
   dnsbl: 'zen.spamhaus.org'
   require_credentials: {
-    'user@slimta.org': 'xxxxxxxx'
+    'user@example.com': 'xxxxxxxx'
   }
 }
 

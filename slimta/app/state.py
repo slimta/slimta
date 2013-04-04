@@ -127,6 +127,7 @@ class SlimtaState(object):
             return self.queues[name]
         if not options:
             options = getattr(self.cfg.queue, name)
+        from .helpers import add_queue_policies
         new_queue = None
         if not options or options.get('type', 'default') == 'default':
             from slimta.queue import Queue
@@ -140,6 +141,7 @@ class SlimtaState(object):
             new_queue = CeleryQueue(self.celery, relay, name)
         else:
             raise ConfigError('queue type does not exist: '+options.type)
+        add_queue_policies(new_queue, options.get('policies', []))
         self.queues[name] = new_queue
         return new_queue
 
@@ -162,6 +164,7 @@ class SlimtaState(object):
         new_edge = None
         if options.type == 'smtp':
             from slimta.edge.smtp import SmtpEdge
+            from .helpers import build_smtpedge_validators, build_smtpedge_auth
             ip = options.listener.get('interface', '127.0.0.1')
             port = int(options.listener.get('port', 25))
             queue_name = options.get('queue')
@@ -172,6 +175,11 @@ class SlimtaState(object):
             if options.get('tls'):
                 kwargs['tls'] = dict(options.tls)
             kwargs['tls_immediately'] = options.get('tls_immediately', False)
+            kwargs['validator_class'] = build_smtpedge_validators(options)
+            kwargs['auth_class'] = build_smtpedge_auth(options)
+            kwargs['command_timeout'] = 20.0
+            kwargs['data_timeout'] = 30.0
+            kwargs['max_size'] = 10485760
             new_edge = SmtpEdge((ip, port), queue, **kwargs)
             new_edge.start()
         else:

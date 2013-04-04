@@ -1,5 +1,6 @@
 *.py[cod]
 .venv/
+etc/rules.conf
 
 # C extensions
 *.so

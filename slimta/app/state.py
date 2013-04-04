@@ -25,8 +25,11 @@ import sys
 import os
 import os.path
 import warnings
+from functools import wraps
+from contextlib import contextmanager
+from socket import getfqdn
 
-from config import Config, ConfigError
+from config import Config, ConfigError, ConfigInputStream
 import slimta.system
 
 from .celery import get_app as get_celery_app
@@ -47,19 +50,21 @@ class SlimtaState(object):
         self.relays = {}
         self._celery = None
 
-    def _check_configs(self, files):
+    @contextmanager
+    def _with_chdir(self, new_dir):
+        old_dir = os.getcwd()
+        os.chdir(new_dir)
+        yield old_dir
+        os.chdir(old_dir)
+
+    def _try_configs(self, files):
         for config_file in files:
             config_file = os.path.expanduser(config_file)
-            f = None
-            try:
-                f = open(config_file, 'r')
-            except IOError:
-                pass
-            else:
-                return Config(f)
-            finally:
-                if f is not None:
-                    f.close()
+            config_dir = os.path.abspath(os.path.dirname(config_file))
+            config_base = os.path.basename(config_file)
+            with self._with_chdir(config_dir):
+                if os.path.exists(config_base):
+                    return Config(config_base)
         return None
 
     def load_config(self, config_file):
@@ -70,7 +75,7 @@ class SlimtaState(object):
         if config_file:
             files = [config_file]
 
-        self.cfg = self._check_configs(files)
+        self.cfg = self._try_configs(files)
         return bool(self.cfg)
 
     def drop_privileges(self):
@@ -157,13 +162,17 @@ class SlimtaState(object):
         new_edge = None
         if options.type == 'smtp':
             from slimta.edge.smtp import SmtpEdge
-            ip = options.listeners[0].get('interface', '127.0.0.1')
-            port = int(options.listeners[0].get('port', 25))
+            ip = options.listener.get('interface', '127.0.0.1')
+            port = int(options.listener.get('port', 25))
             queue_name = options.get('queue')
             if not queue_name:
                 raise ConfigError('edge sections must be given a queue name')
             queue = self._start_queue(queue_name)
-            new_edge = SmtpEdge((ip, port), queue)
+            kwargs = {}
+            if options.get('tls'):
+                kwargs['tls'] = dict(options.tls)
+            kwargs['tls_immediately'] = options.get('tls_immediately', False)
+            new_edge = SmtpEdge((ip, port), queue, **kwargs)
             new_edge.start()
         else:
             raise ConfigError('edge type does not exist: '+options.type)

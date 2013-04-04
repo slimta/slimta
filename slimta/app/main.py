@@ -26,6 +26,7 @@ import logging
 from argparse import ArgumentParser
 
 from gevent import monkey; monkey.patch_all()
+from gevent import sleep
 
 from .core import VERSION
 from .state import SlimtaState
@@ -52,9 +53,10 @@ def main():
 
     state.start_edges()
 
-    state.drop_privileges()
     state.redirect_streams()
     state.daemonize()
+    sleep(0.1)
+    state.drop_privileges()
 
     state.loop()
 

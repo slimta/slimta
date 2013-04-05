@@ -35,6 +35,8 @@ setup(name='slimta',
       namespace_packages=['slimta'],
       install_requires=['python-slimta',
                         'python-slimta-celeryqueue',
+                        'python-slimta-diskstorage',
+                        'python-slimta-maildrop',
                         'config'],
       entry_points={'console_scripts': [
               'slimta = slimta.app.main:main',

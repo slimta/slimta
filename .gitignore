@@ -1,5 +1,6 @@
 *.py[cod]
 .venv/
+etc/slimta.conf
 etc/rules.conf
 
 # C extensions

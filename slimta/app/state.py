@@ -132,9 +132,34 @@ class SlimtaState(object):
             options = getattr(self.cfg.queue, name)
         from .helpers import add_queue_policies
         new_queue = None
-        if not options or options.get('type', 'default') == 'default':
+        if options.type == 'memory':
             from slimta.queue import Queue
-            pass
+            from slimta.queue.dict import DictStorage
+            relay_name = options.get('relay')
+            if not relay_name:
+                raise ConfigError('queue sections must be given a relay name')
+            relay = self._start_relay(relay_name)
+            store = DictStorage()
+            new_queue = Queue(store, relay)
+        elif options.type == 'disk':
+            from slimta.queue import Queue
+            from slimta.diskstorage import DiskStorage
+            relay_name = options.get('relay')
+            if not relay_name:
+                raise ConfigError('queue sections must be given a relay name')
+            relay = self._start_relay(relay_name)
+            env_dir = options.envelope_dir
+            meta_dir = options.meta_dir
+            tmp_dir = options.get('tmp_dir')
+            store = DiskStorage(env_dir, meta_dir, tmp_dir)
+            new_queue = Queue(store, relay)
+        elif options.type == 'proxy':
+            from slimta.queue.proxy import ProxyQueue
+            relay_name = options.get('relay')
+            if not relay_name:
+                raise ConfigError('queue sections must be given a relay name')
+            relay = self._start_relay(relay_name)
+            new_queue = ProxyQueue(relay)
         elif options.type == 'celery':
             from slimta.celeryqueue import CeleryQueue
             relay_name = options.get('relay')

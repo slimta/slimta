@@ -32,6 +32,7 @@ from socket import getfqdn
 from config import Config, ConfigError, ConfigInputStream
 import slimta.system
 
+from .validation import ConfigValidation
 from .celery import get_app as get_celery_app
 
 
@@ -77,7 +78,11 @@ class SlimtaState(object):
             files = [config_file]
 
         self.cfg = self._try_configs(files)
-        return bool(self.cfg)
+        if self.cfg:
+            ConfigValidation.check(self.cfg)
+            return True
+        else:
+            return False
 
     def drop_privileges(self):
         if os.getuid() == 0:

@@ -29,7 +29,7 @@ celery_app: {
   CELERYD_CONCURRENCY: 50
 }
 
-rules: @"rules.conf"
+rules: @"rules.conf.sample"
 
 edge: {
   inbound: {

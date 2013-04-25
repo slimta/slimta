@@ -21,7 +21,7 @@
 
 
 from functools import wraps
-from socket import getfqdn
+from socket import getfqdn, gethostname
 
 from slimta.edge.smtp import SmtpValidators
 from slimta.smtp.auth import Auth, CredentialsInvalidError
@@ -47,7 +47,8 @@ class RuleHelpers(object):
         rules = options.get('rules', {})
         self.banner = rules.get('banner')
         if self.banner:
-            self.banner = self.banner.format(fqdn=getfqdn())
+            self.banner = self.banner.format(fqdn=getfqdn(),
+                                             hostname=gethostname())
         self.dnsbl = rules.get('dnsbl')
         self.only_senders = rules.get('only_senders')
         self.only_rcpts = rules.get('only_recipients')

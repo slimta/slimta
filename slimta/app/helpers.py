@@ -88,7 +88,7 @@ def build_smtpedge_validators(options):
         def handle_rcpt(self, reply, rcpt):
             if not rules.is_recipient_ok(rcpt):
                 reply.code = '550'
-                reply.message = '5.7.1 Recipient <{0} Not allowed'.format(rcpt)
+                reply.message = '5.7.1 Recipient <{0}> Not allowed'.format(rcpt)
     return CustomValidators
 
 

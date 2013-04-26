@@ -46,9 +46,10 @@ def main():
 
     state.start_celery_queues()
 
-    state.drop_privileges()
     state.redirect_streams()
     state.daemonize()
+    sleep(0.1)
+    state.drop_privileges()
 
     state.worker_loop()
 

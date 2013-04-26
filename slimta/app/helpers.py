@@ -117,7 +117,8 @@ def add_queue_policies(queue, policy_options):
         if policy.type == 'add_date_header':
             queue.add_policy(AddDateHeader())
         elif policy.type == 'add_messageid_header':
-            queue.add_policy(AddMessageIdHeader())
+            hostname = policy.get('hostname')
+            queue.add_policy(AddMessageIdHeader(hostname))
         elif policy.type == 'add_received_header':
             queue.add_policy(AddReceivedHeader())
         elif policy.type == 'recipient_split':

@@ -138,7 +138,7 @@ class SlimtaState(object):
             return self.queues[name]
         if not options:
             options = getattr(self.cfg.queue, name)
-        from .helpers import add_queue_policies
+        from .helpers import add_queue_policies, build_backoff_function
         new_queue = None
         if options.type == 'memory':
             from slimta.queue import Queue
@@ -148,7 +148,8 @@ class SlimtaState(object):
                 raise ConfigError('queue sections must be given a relay name')
             relay = self._start_relay(relay_name)
             store = DictStorage()
-            new_queue = Queue(store, relay)
+            backoff = build_backoff_function(options.get('retry'))
+            new_queue = Queue(store, relay, backoff=backoff)
         elif options.type == 'disk':
             from slimta.queue import Queue
             from slimta.diskstorage import DiskStorage
@@ -160,7 +161,8 @@ class SlimtaState(object):
             meta_dir = options.meta_dir
             tmp_dir = options.get('tmp_dir')
             store = DiskStorage(env_dir, meta_dir, tmp_dir)
-            new_queue = Queue(store, relay)
+            backoff = build_backoff_function(options.get('retry'))
+            new_queue = Queue(store, relay, backoff=backoff)
         elif options.type == 'proxy':
             from slimta.queue.proxy import ProxyQueue
             relay_name = options.get('relay')
@@ -174,7 +176,8 @@ class SlimtaState(object):
             if not relay_name:
                 raise ConfigError('queue sections must be given a relay name')
             relay = self._start_relay(relay_name)
-            new_queue = CeleryQueue(self.celery, relay, name)
+            backoff = build_backoff_function(options.get('retry'))
+            new_queue = CeleryQueue(self.celery, relay, name, backoff=backoff)
         else:
             raise ConfigError('queue type does not exist: '+options.type)
         add_queue_policies(new_queue, options.get('policies', []))

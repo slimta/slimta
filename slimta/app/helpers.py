@@ -20,6 +20,7 @@
 #
 
 
+import math
 from functools import wraps
 from socket import getfqdn, gethostname
 
@@ -138,6 +139,21 @@ def fill_hostname_template(val):
         return val
     return val.format(fqdn=getfqdn(),
                       hostname=gethostname())
+
+
+def build_backoff_function(retry):
+    if not retry:
+        def no_retries(envelope, attempts):
+            return None
+        return no_retries
+    maximum = retry.get('maximum', 0)
+    delay = retry.get('delay', '300')
+    delay_func = eval('lambda x: '+delay, math.__dict__)
+    def backoff(envelope, attempts):
+        if attempts > maximum:
+            return None
+        return delay_func(attempts)
+    return backoff
 
 
 # vim:et:fdm=marker:sts=4:sw=4:ts=4

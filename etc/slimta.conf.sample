@@ -88,6 +88,10 @@ queue: {
       {type: add_received_header}
       {type: recipient_domain_split}
     ]
+    retry: {
+      maximum: 3
+      delay: '30*x'
+    }
   }
 }
 

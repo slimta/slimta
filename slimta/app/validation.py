@@ -126,6 +126,10 @@ class ConfigValidation(object):
                 msg = 'Expected dictionary'
                 raise ConfigValidationError(msg, mystack)
             self._check_keys(p, {'type': (basestring, True)}, mystack)
+        if 'retry' in opts:
+            retry_keydict = {'maximum': (int, False),
+                             'delay': (basestring, False)}
+            self._check_keys(opts.retry, retry_keydict, stack+['retry'], True)
 
     def _check_relay(self, opts, stack):
         keydict = {'type': (basestring, True),

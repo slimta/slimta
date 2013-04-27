@@ -27,7 +27,6 @@ import os.path
 import warnings
 from functools import wraps
 from contextlib import contextmanager
-from socket import getfqdn
 
 from config import Config, ConfigError, ConfigInputStream
 import slimta.system
@@ -120,9 +119,10 @@ class SlimtaState(object):
             new_relay = MxSmtpRelay(ehlo_as=ehlo_as)
         elif options.type == 'static':
             from slimta.relay.smtp.static import StaticSmtpRelay
+            from .helpers import fill_hostname_template
             host = options.host
             port = options.get('port', 25)
-            ehlo_as = options.get('ehlo_as')
+            ehlo_as = fill_hostname_template(options.get('ehlo_as'))
             new_relay = StaticSmtpRelay(host, port, ehlo_as=ehlo_as)
         elif options.type == 'maildrop':
             from slimta.maildroprelay import MaildropRelay
@@ -201,6 +201,7 @@ class SlimtaState(object):
         if options.type == 'smtp':
             from slimta.edge.smtp import SmtpEdge
             from .helpers import build_smtpedge_validators, build_smtpedge_auth
+            from .helpers import fill_hostname_template
             ip = options.listener.get('interface', '127.0.0.1')
             port = int(options.listener.get('port', 25))
             queue_name = options.queue
@@ -213,8 +214,8 @@ class SlimtaState(object):
             kwargs['auth_class'] = build_smtpedge_auth(options)
             kwargs['command_timeout'] = 20.0
             kwargs['data_timeout'] = 30.0
-            kwargs['max_size'] = 10485760
-            kwargs['hostname'] = options.get('hostname')
+            kwargs['max_size'] = options.get('max_size', 10485760)
+            kwargs['hostname'] = fill_hostname_template(options.get('hostname'))
             new_edge = SmtpEdge((ip, port), queue, **kwargs)
             new_edge.start()
         else:

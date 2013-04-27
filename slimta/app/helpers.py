@@ -45,10 +45,7 @@ class RuleHelpers(object):
 
     def __init__(self, options):
         rules = options.get('rules', {})
-        self.banner = rules.get('banner')
-        if self.banner:
-            self.banner = self.banner.format(fqdn=getfqdn(),
-                                             hostname=gethostname())
+        self.banner = fill_hostname_template(rules.get('banner'))
         self.dnsbl = rules.get('dnsbl')
         self.only_senders = rules.get('only_senders')
         self.only_rcpts = rules.get('only_recipients')
@@ -134,6 +131,13 @@ def add_queue_policies(queue, policy_options):
             host = policy.get('host', 'localhost')
             port = int(policy.get('port', 783))
             queue.add_policy(SpamAssassin((host, port)))
+
+
+def fill_hostname_template(val):
+    if not val:
+        return val
+    return val.format(fqdn=getfqdn(),
+                      hostname=gethostname())
 
 
 # vim:et:fdm=marker:sts=4:sw=4:ts=4

@@ -86,6 +86,8 @@ class ConfigValidation(object):
         keydict = {'type': (basestring, True),
                    'queue': (basestring, True),
                    'listener': (Mapping, True),
+                   'hostname': (basestring, False),
+                   'max_size': (int, False)
                    'tls': (Mapping, False),
                    'tls_immediately': (bool, False),
                    'rules': (Mapping, False)}
@@ -126,7 +128,8 @@ class ConfigValidation(object):
             self._check_keys(p, {'type': (basestring, True)}, mystack)
 
     def _check_relay(self, opts, stack):
-        keydict = {'type': (basestring, True)}
+        keydict = {'type': (basestring, True),
+                   'ehlo_as': (basestring, False)}
         self._check_keys(opts, keydict, stack)
 
     def _check_toplevel(self, stack):

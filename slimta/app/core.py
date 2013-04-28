@@ -20,7 +20,7 @@
 #
 
 
-VERSION = '0.1.2'
+VERSION = '0.1.3'
 
 
 # vim:et:fdm=marker:sts=4:sw=4:ts=4

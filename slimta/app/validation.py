@@ -87,7 +87,7 @@ class ConfigValidation(object):
                    'queue': (basestring, True),
                    'listener': (Mapping, True),
                    'hostname': (basestring, False),
-                   'max_size': (int, False)
+                   'max_size': (int, False),
                    'tls': (Mapping, False),
                    'tls_immediately': (bool, False),
                    'rules': (Mapping, False)}

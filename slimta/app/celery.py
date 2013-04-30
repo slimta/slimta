@@ -25,6 +25,7 @@ from __future__ import absolute_import
 from celery.loaders.app import AppLoader
 from celery import Celery
 from celery.datastructures import DictAttribute
+from celery.apps.worker import Worker
 
 
 def _get_loader_class(settings):
@@ -48,6 +49,16 @@ def get_celery_app(cfg):
     _set_custom_defaults(settings)
     loader_cls = _get_loader_class(settings)
     return Celery('slimta.app.queue', loader=loader_cls)
+
+
+class _SlimtaWorker(Worker):
+
+    def setup_logging(self):
+        pass
+
+
+def get_celery_worker(app):
+    return _SlimtaWorker(app=app)
 
 
 # vim:et:fdm=marker:sts=4:sw=4:ts=4

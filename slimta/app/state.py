@@ -32,7 +32,7 @@ from config import Config, ConfigError, ConfigInputStream
 import slimta.system
 
 from .validation import ConfigValidation
-from .celery import get_celery_app
+from .celery import get_celery_app, get_celery_worker
 
 
 class SlimtaState(object):
@@ -232,7 +232,7 @@ class SlimtaState(object):
 
     def worker_loop(self):
         try:
-            self.celery.Worker().run()
+            get_celery_worker(self.celery).run()
         except (KeyboardInterrupt, SystemExit):
             print
 

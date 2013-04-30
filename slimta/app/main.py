@@ -39,10 +39,11 @@ def parse_args():
                     help='Override configs and force the process to remain attached to the terminal.')
     argparser.add_argument('-p', '--pid-file', metavar='FILE', default=None,
                     help='Store process ID in FILE during execution.')
+
     return argparser, argparser.parse_args()
 
 
-def main():
+def slimta():
     state = SlimtaState('slimta')
     state.load_config(*parse_args())
 
@@ -55,6 +56,21 @@ def main():
     state.drop_privileges()
 
     state.loop()
+
+
+def worker():
+    state = SlimtaState('worker')
+    state.load_config(*parse_args())
+
+    state.start_celery_queues()
+
+    state.setup_logging()
+    state.redirect_streams()
+    state.daemonize()
+    sleep(0.1)
+    state.drop_privileges()
+
+    state.worker_loop()
 
 
 # vim:et:fdm=marker:sts=4:sw=4:ts=4

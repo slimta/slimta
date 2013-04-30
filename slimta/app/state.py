@@ -32,7 +32,7 @@ from config import Config, ConfigError, ConfigInputStream
 import slimta.system
 
 from .validation import ConfigValidation
-from .celery import get_app as get_celery_app
+from .celery import get_celery_app
 
 
 class SlimtaState(object):

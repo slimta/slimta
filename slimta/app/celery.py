@@ -36,7 +36,7 @@ def _get_loader_class(settings):
     return MyLoader
 
 
-def get_app(cfg):
+def get_celery_app(cfg):
     settings = cfg.get('celery_app')
     loader_cls = _get_loader_class(settings)
     return Celery('slimta.app.queue', loader=loader_cls)

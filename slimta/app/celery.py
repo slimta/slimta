@@ -22,6 +22,9 @@
 
 from __future__ import absolute_import
 
+import os
+import sys
+
 from celery.loaders.app import AppLoader
 from celery import Celery
 from celery.datastructures import DictAttribute
@@ -50,8 +53,25 @@ def get_celery_app(cfg):
     return Celery('slimta.app.queue', loader=loader_cls)
 
 
+class _SlimtaWorker(Worker):
+
+    system_stdout = sys.stdout    
+
+    def setup_logging(self):
+        pass
+
+    def run(self, *args, **kwargs):
+        sys.stdout = open(os.devnull, 'w')
+        super(_SlimtaWorker, self).run(*args, **kwargs)
+
+    def run_worker(self, *args, **kwargs):
+        sys.stdout.close()
+        sys.stdout = self.system_stdout
+        super(_SlimtaWorker, self).run_worker(*args, **kwargs)
+
+
 def get_celery_worker(app):
-    return Worker(loglevel='debug', app=app)
+    return _SlimtaWorker(loglevel='debug', app=app)
 
 
 # vim:et:fdm=marker:sts=4:sw=4:ts=4

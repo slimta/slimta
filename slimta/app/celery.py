@@ -55,28 +55,12 @@ def get_celery_app(cfg):
 
 class _SlimtaWorker(Worker):
 
-    system_stdout = sys.stdout    
-
     def setup_logging(self):
         pass
 
-    def startup_info(self):
-        return ''
-
-    def extra_info(self):
-        pass
-
-    def run(self, *args, **kwargs):
-        sys.stdout = sys.stderr
-        super(_SlimtaWorker, self).run(*args, **kwargs)
-
-    def run_worker(self, *args, **kwargs):
-        sys.stdout = self.system_stdout
-        super(_SlimtaWorker, self).run_worker(*args, **kwargs)
-
 
 def get_celery_worker(app):
-    return _SlimtaWorker(loglevel='debug', app=app)
+    return _SlimtaWorker(app=app)
 
 
 # vim:et:fdm=marker:sts=4:sw=4:ts=4

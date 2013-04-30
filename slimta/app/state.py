@@ -61,10 +61,10 @@ class SlimtaState(object):
 
     @contextmanager
     def _with_pid_file(self):
-        pid_file = os.path.abspath(self.args.pid_file)
-        if not pid_file:
+        if not self.args.pid_file:
             yield
         else:
+            pid_file = os.path.abspath(self.args.pid_file)
             with open(pid_file, 'w') as f:
                 f.write('{0}\n'.format(os.getpid()))
             try:

@@ -37,8 +37,8 @@ from .celery import get_celery_app, get_celery_worker
 
 class SlimtaState(object):
 
-    _global_config_files = [os.path.expanduser('~/.slimta.conf'),
-                            '/etc/slimta.conf']
+    _global_config_files = [os.path.expanduser('~/.slimta/slimta.conf'),
+                            '/etc/slimta/slimta.conf']
 
     def __init__(self, program, attached=True):
         self.config_file = os.getenv('SLIMTA_CONFIG', None)

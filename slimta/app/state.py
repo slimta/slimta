@@ -33,6 +33,7 @@ import slimta.system
 
 from .validation import ConfigValidation, ConfigValidationError
 from .celery import get_celery_app, get_celery_worker
+from .logging import setup_logging
 
 
 class SlimtaState(object):
@@ -137,6 +138,10 @@ class SlimtaState(object):
         flag = self.cfg.process.get(self.program).get('daemon', False)
         if flag and not self.args.attached:
             slimta.system.daemonize()
+
+    def setup_logging(self):
+        settings = self.cfg.process.get(self.program).get('logging')
+        setup_logging(settings)
 
     def _start_relay(self, name, options=None):
         if name in self.relays:

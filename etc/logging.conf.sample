@@ -1,0 +1,28 @@
+
+version: 1
+
+handlers: {
+  console: {
+    class: 'logging.StreamHandler'
+    level: DEBUG
+    stream: 'ext://sys.stdout'
+  }
+}
+
+loggers: {
+  celery: {
+    level: WARNING
+    propagate: True
+  }
+  slimta: {
+    level: DEBUG
+    propagate: True
+  }
+}
+
+root: {
+  level: DEBUG
+  handlers: [console]
+}
+
+# vim:sw=2:ts=2:sts=2:et:ai:

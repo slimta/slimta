@@ -79,7 +79,8 @@ class ConfigValidation(object):
                    'user': (basestring, False),
                    'group': (basestring, False),
                    'stdout': (basestring, False),
-                   'stderr': (basestring, False)}
+                   'stderr': (basestring, False),
+                   'logging': (Mapping, False)}
         self._check_keys(opts, keydict, stack, True)
 
     def _check_edge(self, opts, stack):

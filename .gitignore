@@ -2,6 +2,7 @@
 .venv/
 etc/slimta.conf
 etc/rules.conf
+etc/logging.conf
 
 # C extensions
 *.so

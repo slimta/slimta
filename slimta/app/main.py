@@ -21,8 +21,6 @@
 
 from __future__ import absolute_import
 
-import sys
-import logging
 from argparse import ArgumentParser
 
 from gevent import monkey; monkey.patch_all()
@@ -30,8 +28,6 @@ from gevent import sleep
 
 from .core import VERSION
 from .state import SlimtaState
-
-logging.basicConfig(level=logging.DEBUG, stream=sys.stdout)
 
 
 def parse_args():
@@ -52,6 +48,7 @@ def main():
 
     state.start_edges()
 
+    state.setup_logging()
     state.redirect_streams()
     state.daemonize()
     sleep(0.1)

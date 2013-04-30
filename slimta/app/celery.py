@@ -51,14 +51,8 @@ def get_celery_app(cfg):
     return Celery('slimta.app.queue', loader=loader_cls)
 
 
-class _SlimtaWorker(Worker):
-
-    def setup_logging(self):
-        pass
-
-
 def get_celery_worker(app):
-    return _SlimtaWorker(app=app)
+    return Worker(loglevel='debug', app=app)
 
 
 # vim:et:fdm=marker:sts=4:sw=4:ts=4

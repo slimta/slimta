@@ -272,7 +272,7 @@ class SlimtaState(object):
                 with self._with_pid_file():
                     get_celery_worker(self.celery).run()
         except (KeyboardInterrupt, SystemExit):
-            print
+            pass
 
     def loop(self):
         from gevent.event import Event
@@ -281,7 +281,7 @@ class SlimtaState(object):
                 with self._with_pid_file():
                     Event().wait()
         except (KeyboardInterrupt, SystemExit):
-            print
+            pass
 
 
 # vim:et:fdm=marker:sts=4:sw=4:ts=4

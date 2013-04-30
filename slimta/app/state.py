@@ -151,15 +151,22 @@ class SlimtaState(object):
         new_relay = None
         if options.type == 'mx':
             from slimta.relay.smtp.mx import MxSmtpRelay
-            ehlo_as = options.get('ehlo_as')
-            new_relay = MxSmtpRelay(ehlo_as=ehlo_as)
+            from .helpers import fill_hostname_template
+            kwargs = {}
+            kwargs['ehlo_as'] = fill_hostname_template(options.get('ehlo_as'))
+            if 'tls' in options:
+                kwargs['tls'] = dict(options.tls)
+            new_relay = MxSmtpRelay(**kwargs)
         elif options.type == 'static':
             from slimta.relay.smtp.static import StaticSmtpRelay
             from .helpers import fill_hostname_template
-            host = options.host
-            port = options.get('port', 25)
-            ehlo_as = fill_hostname_template(options.get('ehlo_as'))
-            new_relay = StaticSmtpRelay(host, port, ehlo_as=ehlo_as)
+            kwargs = {}
+            kwargs['host'] = options.host
+            kwargs['port'] = options.get('port', 25)
+            kwargs['ehlo_as'] = fill_hostname_template(options.get('ehlo_as'))
+            if 'tls' in options:
+                kwargs['tls'] = dict(options.tls)
+            new_relay = StaticSmtpRelay(**kwargs)
         elif options.type == 'maildrop':
             from slimta.maildroprelay import MaildropRelay
             executable = options.get('executable')

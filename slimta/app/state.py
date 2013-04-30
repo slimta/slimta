@@ -153,6 +153,10 @@ class SlimtaState(object):
             from slimta.relay.smtp.mx import MxSmtpRelay
             from .helpers import fill_hostname_template
             kwargs = {}
+            kwargs['connect_timeout'] = options.get('connect_timeout', 30)
+            kwargs['command_timeout'] = options.get('command_timeout', 30)
+            kwargs['data_timeout'] = options.get('data_timeout', 60)
+            kwargs['idle_timeout'] = options.get('idle_timeout', 10)
             kwargs['ehlo_as'] = fill_hostname_template(options.get('ehlo_as'))
             if 'tls' in options:
                 kwargs['tls'] = dict(options.tls)
@@ -163,6 +167,10 @@ class SlimtaState(object):
             kwargs = {}
             kwargs['host'] = options.host
             kwargs['port'] = options.get('port', 25)
+            kwargs['connect_timeout'] = options.get('connect_timeout', 30)
+            kwargs['command_timeout'] = options.get('command_timeout', 30)
+            kwargs['data_timeout'] = options.get('data_timeout', 60)
+            kwargs['idle_timeout'] = options.get('idle_timeout', 10)
             kwargs['ehlo_as'] = fill_hostname_template(options.get('ehlo_as'))
             if 'tls' in options:
                 kwargs['tls'] = dict(options.tls)

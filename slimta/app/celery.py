@@ -60,12 +60,17 @@ class _SlimtaWorker(Worker):
     def setup_logging(self):
         pass
 
+    def startup_info(self):
+        return ''
+
+    def extra_info(self):
+        pass
+
     def run(self, *args, **kwargs):
-        sys.stdout = open(os.devnull, 'w')
+        sys.stdout = sys.stderr
         super(_SlimtaWorker, self).run(*args, **kwargs)
 
     def run_worker(self, *args, **kwargs):
-        sys.stdout.close()
         sys.stdout = self.system_stdout
         super(_SlimtaWorker, self).run_worker(*args, **kwargs)
 

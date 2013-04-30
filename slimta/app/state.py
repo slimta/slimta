@@ -31,7 +31,7 @@ from contextlib import contextmanager
 from config import Config, ConfigError, ConfigInputStream
 import slimta.system
 
-from .validation import ConfigValidation
+from .validation import ConfigValidation, ConfigValidationError
 from .celery import get_celery_app, get_celery_worker
 
 
@@ -40,11 +40,9 @@ class SlimtaState(object):
     _global_config_files = [os.path.expanduser('~/.slimta/slimta.conf'),
                             '/etc/slimta/slimta.conf']
 
-    def __init__(self, program, attached=True):
-        self.config_file = os.getenv('SLIMTA_CONFIG', None)
+    def __init__(self, program):
         self.program = program
-        self.attached = attached
-        self.ap = None
+        self.args = None
         self.cfg = None
         self.edges = {}
         self.queues = {}
@@ -55,8 +53,38 @@ class SlimtaState(object):
     def _with_chdir(self, new_dir):
         old_dir = os.getcwd()
         os.chdir(new_dir)
-        yield old_dir
-        os.chdir(old_dir)
+        try:
+            yield old_dir
+        finally:
+            os.chdir(old_dir)
+
+    @contextmanager
+    def _with_pid_file(self):
+        pid_file = os.path.abspath(self.args.pid_file)
+        if not pid_file:
+            yield
+        else:
+            with open(pid_file, 'w') as f:
+                f.write('{0}\n'.format(os.getpid()))
+            try:
+                yield
+            finally:
+                try:
+                    os.unlink(pid_file)
+                except OSError:
+                    pass
+
+    @contextmanager
+    def _with_sighandlers(self):
+        from signal import SIGTERM
+        from gevent import signal
+        def handle_term():
+            sys.exit(0)
+        old_term = signal(SIGTERM, handle_term)
+        try:
+            yield
+        finally:
+            signal(SIGTERM, old_term)
 
     def _try_configs(self, files):
         for config_file in files:
@@ -65,23 +93,26 @@ class SlimtaState(object):
             config_base = os.path.basename(config_file)
             with self._with_chdir(config_dir):
                 if os.path.exists(config_base):
-                    return Config(config_base)
-        return None
+                    return Config(config_base), config_file
+        return None, None
 
-    def load_config(self, config_file):
-        if self.cfg:
-            return True
+    def load_config(self, argparser, args):
+        if self.args:
+            return
+        self.args = args
 
         files = self._global_config_files
-        if config_file:
-            files = [config_file]
+        if args.config:
+            files = [args.config]
 
-        self.cfg = self._try_configs(files)
+        self.cfg, config_file = self._try_configs(files)
         if self.cfg:
-            ConfigValidation.check(self.cfg)
-            return True
+            try:
+                ConfigValidation.check(self.cfg, self.program)
+            except ConfigValidationError as e:
+                argparser.error(str(e))
         else:
-            return False
+            argparser.error('No configuration files found!')
 
     def drop_privileges(self):
         process_options = self.cfg.process.get(self.program)
@@ -96,7 +127,7 @@ class SlimtaState(object):
     def redirect_streams(self):
         process_options = self.cfg.process.get(self.program)
         flag = process_options.get('daemon', False)
-        if flag and not self.attached:
+        if flag and not self.args.attached:
             so = process_options.get('stdout')
             se = process_options.get('stderr')
             si = process_options.get('stdin')
@@ -104,7 +135,7 @@ class SlimtaState(object):
 
     def daemonize(self):
         flag = self.cfg.process.get(self.program).get('daemon', False)
-        if flag and not self.attached:
+        if flag and not self.args.attached:
             slimta.system.daemonize()
 
     def _start_relay(self, name, options=None):
@@ -232,14 +263,18 @@ class SlimtaState(object):
 
     def worker_loop(self):
         try:
-            get_celery_worker(self.celery).run()
+            with self._with_sighandlers():
+                with self._with_pid_file():
+                    get_celery_worker(self.celery).run()
         except (KeyboardInterrupt, SystemExit):
             print
 
     def loop(self):
         from gevent.event import Event
         try:
-            Event().wait()
+            with self._with_sighandlers():
+                with self._with_pid_file():
+                    Event().wait()
         except (KeyboardInterrupt, SystemExit):
             print
 

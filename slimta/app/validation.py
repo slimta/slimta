@@ -136,7 +136,7 @@ class ConfigValidation(object):
                    'ehlo_as': (basestring, False)}
         self._check_keys(opts, keydict, stack)
 
-    def _check_toplevel(self, stack):
+    def _check_toplevel(self, stack, program):
         keydict = {'process': (Mapping, True),
                    'edge': (Mapping, True),
                    'relay': (Mapping, True),
@@ -156,9 +156,13 @@ class ConfigValidation(object):
         for relay, opts in self.cfg.relay.iteritems():
             self._check_relay(opts, stack+['relay', relay])
 
+        if program not in self.cfg.process:
+            msg = "Missing required key '{0}'".format(program)
+            raise ConfigValidationError(msg, stack+['process'])
+
     @classmethod
-    def check(cls, cfg):
-        return cls(cfg)._check_toplevel(['root'])
+    def check(cls, cfg, program):
+        return cls(cfg)._check_toplevel(['root'], program)
 
 
 # vim:et:fdm=marker:sts=4:sw=4:ts=4

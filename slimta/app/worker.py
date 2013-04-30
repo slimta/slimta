@@ -39,17 +39,17 @@ def parse_args():
     argparser.add_argument('--version', action='version', version='%(prog)s '+VERSION)
     argparser.add_argument('-c', '--config', metavar='FILE', default=None,
                     help='Specifies a configuration file to read. If not given, the default locations ($HOME/.slimta/slimta.conf, /etc/slimta/slimta.conf) are checked.')
-    argparser.add_argument('-a', '--attached', action='store_true',
-                    help='Prevent process from daemonizing, overriding configs.')
+    argparser.add_argument('-a', '--no-daemon', dest='daemon', action='store_false', default=None,
+                    help='Override configs and force the process to remain attached to the terminal.')
+    argparser.add_argument('-p', '--pid-file', metavar='FILE', default=None,
+                    help='Store process ID in FILE during execution.')
+
     return argparser, argparser.parse_args()
 
 
 def main():
-    argparser, args = parse_args()
-
-    state = SlimtaState('worker', args.attached)
-    if not state.load_config(args.config):
-        argparser.error('No configuration files found!')
+    state = SlimtaState('worker')
+    state.load_config(*parse_args()):
 
     state.start_celery_queues()
 

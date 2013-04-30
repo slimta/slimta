@@ -157,6 +157,7 @@ class SlimtaState(object):
             kwargs['command_timeout'] = options.get('command_timeout', 30)
             kwargs['data_timeout'] = options.get('data_timeout', 60)
             kwargs['idle_timeout'] = options.get('idle_timeout', 10)
+            kwargs['pool_size'] = options.get('concurrent_connections', 5)
             kwargs['ehlo_as'] = fill_hostname_template(options.get('ehlo_as'))
             if 'tls' in options:
                 kwargs['tls'] = dict(options.tls)
@@ -171,6 +172,7 @@ class SlimtaState(object):
             kwargs['command_timeout'] = options.get('command_timeout', 30)
             kwargs['data_timeout'] = options.get('data_timeout', 60)
             kwargs['idle_timeout'] = options.get('idle_timeout', 10)
+            kwargs['pool_size'] = options.get('concurrent_connections', 5)
             kwargs['ehlo_as'] = fill_hostname_template(options.get('ehlo_as'))
             if 'tls' in options:
                 kwargs['tls'] = dict(options.tls)

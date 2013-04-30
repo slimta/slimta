@@ -37,16 +37,15 @@ def _get_loader_class(settings):
     return MyLoader
 
 
-def _set_custom_defaults(settings):
-    if 'CELERYD_POOL' not in settings:
-        settings['CELERYD_POOL'] = 'gevent'
+def _force_gevent(settings):
+    settings['CELERYD_POOL'] = 'gevent'
     if 'CELERYD_CONCURRENCY' not in settings:
         settings['CELERYD_CONCURRENCY'] = 50
 
 
 def get_celery_app(cfg):
     settings = cfg.get('celery_app')
-    _set_custom_defaults(settings)
+    _force_gevent(settings)
     loader_cls = _get_loader_class(settings)
     return Celery('slimta.app.queue', loader=loader_cls)
 

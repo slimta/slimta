@@ -23,6 +23,7 @@ from __future__ import absolute_import
 
 from argparse import ArgumentParser
 
+from gevent import monkey; monkey.patch_all()
 from gevent import sleep
 
 from .core import VERSION

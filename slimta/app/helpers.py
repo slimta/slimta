@@ -52,7 +52,7 @@ class RuleHelpers(object):
         self.only_senders = rules.get('only_senders')
         self.only_rcpts = rules.get('only_recipients')
         self.credentials = rules.get('require_credentials')
-        self.reject_spf_fail = rules.get('reject_spf_fail', False)
+        self.reject_spf = rules.get('reject_spf')
 
     def is_sender_ok(self, validators, sender):
         if self.only_senders is not None and sender not in self.only_senders:
@@ -72,10 +72,12 @@ class RuleHelpers(object):
         return self._noop_decorator
 
     def get_mail_decorator(self):
-        if self.reject_spf_fail:
+        if self.reject_spf:
             spf = EnforceSpf()
-            spf.set_enforcement('fail', match_code='550',
-                                match_message='5.7.1 Access denied; {reason}')
+            msg = '5.7.1 Access denied; {reason}'
+            for spf_type in self.reject_spf:
+                spf.set_enforcement(spf_type, match_code='550',
+                                    match_message=msg)
             return spf.check
         return self._noop_decorator
 

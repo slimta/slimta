@@ -27,6 +27,7 @@ from socket import getfqdn, gethostname
 from slimta.edge.smtp import SmtpValidators
 from slimta.smtp.auth import Auth, CredentialsInvalidError
 from slimta.util.dnsbl import check_dnsbl
+from slimta.spf import EnforceSpf
 
 from slimta.policy.forward import Forward
 from slimta.policy.split import RecipientSplit, RecipientDomainSplit
@@ -51,6 +52,7 @@ class RuleHelpers(object):
         self.only_senders = rules.get('only_senders')
         self.only_rcpts = rules.get('only_recipients')
         self.credentials = rules.get('require_credentials')
+        self.reject_spf_fail = rules.get('reject_spf_fail', False)
 
     def is_sender_ok(self, validators, sender):
         if self.only_senders is not None and sender not in self.only_senders:
@@ -69,6 +71,14 @@ class RuleHelpers(object):
             return check_dnsbl(self.dnsbl, match_code='520')
         return self._noop_decorator
 
+    def get_mail_decorator(self):
+        if self.reject_spf_fail:
+            spf = EnforceSpf()
+            spf.set_enforcement('fail', match_code='550',
+                                match_message='5.7.1 Access denied; {reason}')
+            return spf.check
+        return self._noop_decorator
+
     def set_banner_message(self, reply):
         if self.banner:
             reply.message = self.banner
@@ -80,6 +90,7 @@ def build_smtpedge_validators(options):
         @rules.get_banner_decorator()
         def handle_banner(self, reply, address):
             rules.set_banner_message(reply)
+        @rules.get_mail_decorator()
         def handle_mail(self, reply, sender):
             if not rules.is_sender_ok(self, sender):
                 reply.code = '550'

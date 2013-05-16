@@ -37,6 +37,7 @@ setup(name='slimta',
                         'python-slimta-celeryqueue',
                         'python-slimta-diskstorage',
                         'python-slimta-maildrop',
+                        'python-slimta-spf',
                         'config'],
       entry_points={'console_scripts': [
               'slimta = slimta.app.main:slimta',

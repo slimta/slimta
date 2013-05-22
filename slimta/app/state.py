@@ -25,6 +25,7 @@ import sys
 import os
 import os.path
 import warnings
+from importlib import import_module
 from functools import wraps
 from contextlib import contextmanager
 
@@ -143,6 +144,25 @@ class SlimtaState(object):
         settings = self.cfg.process.get(self.program).get('logging')
         setup_logging(settings)
 
+    def _import_symbol(self, path):
+        module_name, _, symbol_name = path.rpartition(':')
+        if not module_name:
+            module_name, _, symbol_name = path.rpartition('.')
+        if not module_name:
+            module_name, symbol_name = path, ''
+        mod = import_module(module_name)
+        if symbol_name:
+            try:
+                return getattr(mod, symbol_name)
+            except AttributeError:
+                raise ImportError('cannot import name '+symbol_name)
+        else:
+            return mod
+
+    def _load_from_custom(self, options, *extra):
+        factory = self._import_symbol(options.factory)
+        return factory(options, *extra)
+
     def _start_relay(self, name, options=None):
         if name in self.relays:
             return self.relays[name]
@@ -181,6 +201,8 @@ class SlimtaState(object):
             from slimta.maildroprelay import MaildropRelay
             executable = options.get('executable')
             new_relay = MaildropRelay(executable=executable)
+        elif options.type == 'custom':
+            new_relay = self._load_from_custom(options)
         else:
             raise ConfigError('relay type does not exist: '+options.type)
         self.relays[name] = new_relay
@@ -193,23 +215,17 @@ class SlimtaState(object):
             options = getattr(self.cfg.queue, name)
         from .helpers import add_queue_policies, build_backoff_function
         new_queue = None
+        relay_name = options.get('relay')
+        relay = self._start_relay(relay_name)
         if options.type == 'memory':
             from slimta.queue import Queue
             from slimta.queue.dict import DictStorage
-            relay_name = options.get('relay')
-            if not relay_name:
-                raise ConfigError('queue sections must be given a relay name')
-            relay = self._start_relay(relay_name)
             store = DictStorage()
             backoff = build_backoff_function(options.get('retry'))
             new_queue = Queue(store, relay, backoff=backoff)
         elif options.type == 'disk':
             from slimta.queue import Queue
             from slimta.diskstorage import DiskStorage
-            relay_name = options.get('relay')
-            if not relay_name:
-                raise ConfigError('queue sections must be given a relay name')
-            relay = self._start_relay(relay_name)
             env_dir = options.envelope_dir
             meta_dir = options.meta_dir
             tmp_dir = options.get('tmp_dir')
@@ -218,19 +234,13 @@ class SlimtaState(object):
             new_queue = Queue(store, relay, backoff=backoff)
         elif options.type == 'proxy':
             from slimta.queue.proxy import ProxyQueue
-            relay_name = options.get('relay')
-            if not relay_name:
-                raise ConfigError('queue sections must be given a relay name')
-            relay = self._start_relay(relay_name)
             new_queue = ProxyQueue(relay)
         elif options.type == 'celery':
             from slimta.celeryqueue import CeleryQueue
-            relay_name = options.get('relay')
-            if not relay_name:
-                raise ConfigError('queue sections must be given a relay name')
-            relay = self._start_relay(relay_name)
             backoff = build_backoff_function(options.get('retry'))
             new_queue = CeleryQueue(self.celery, relay, name, backoff=backoff)
+        elif options.type == 'custom':
+            new_queue = self._load_from_custom(options, relay)
         else:
             raise ConfigError('queue type does not exist: '+options.type)
         add_queue_policies(new_queue, options.get('policies', []))
@@ -254,14 +264,14 @@ class SlimtaState(object):
         if not options:
             options = getattr(self.cfg.edge, name)
         new_edge = None
+        queue_name = options.queue
+        queue = self._start_queue(queue_name)
         if options.type == 'smtp':
             from slimta.edge.smtp import SmtpEdge
             from .helpers import build_smtpedge_validators, build_smtpedge_auth
             from .helpers import fill_hostname_template
             ip = options.listener.get('interface', '127.0.0.1')
             port = int(options.listener.get('port', 25))
-            queue_name = options.queue
-            queue = self._start_queue(queue_name)
             kwargs = {}
             if options.get('tls'):
                 kwargs['tls'] = dict(options.tls)
@@ -274,6 +284,8 @@ class SlimtaState(object):
             kwargs['hostname'] = fill_hostname_template(options.get('hostname'))
             new_edge = SmtpEdge((ip, port), queue, **kwargs)
             new_edge.start()
+        elif options.type == 'custom':
+            new_edge = self._load_from_custom(options, queue)
         else:
             raise ConfigError('edge type does not exist: '+options.type)
         self.edges[name] = new_edge

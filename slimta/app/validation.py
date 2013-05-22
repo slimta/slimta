@@ -86,7 +86,8 @@ class ConfigValidation(object):
     def _check_edge(self, opts, stack):
         keydict = {'type': (basestring, True),
                    'queue': (basestring, True),
-                   'listener': (Mapping, True),
+                   'factory': (basestring, False),
+                   'listener': (Mapping, False),
                    'hostname': (basestring, False),
                    'max_size': (int, False),
                    'tls': (Mapping, False),
@@ -96,10 +97,14 @@ class ConfigValidation(object):
         if not self._check_ref('queue', opts.queue):
             msg = "No match for reference key 'queue'"
             raise ConfigValidationError(msg, stack)
-        listener_keydict = {'interface': (basestring, False),
-                            'port': (int, False)}
-        self._check_keys(opts.listener, listener_keydict,
-                         stack+['listener'], True)
+        if opts.type == 'custom' and not opts.get('factory'):
+            msg = "The 'factory' key must be given when using 'custom' type"
+            raise ConfigValidationError(msg, stack)
+        if 'listener' in opts:
+            listener_keydict = {'interface': (basestring, False),
+                                'port': (int, False)}
+            self._check_keys(opts.listener, listener_keydict,
+                             stack+['listener'], True)
         if 'tls' in opts:
             tls_keydict = {'certfile': (basestring, True),
                            'keyfile': (basestring, True)}
@@ -116,10 +121,14 @@ class ConfigValidation(object):
     def _check_queue(self, opts, stack):
         keydict = {'type': (basestring, True),
                    'relay': (basestring, True),
+                   'factory': (basestring, False),
                    'policies': (Sequence, False)}
         self._check_keys(opts, keydict, stack)
         if not self._check_ref('relay', opts.relay):
             msg = "No match for reference key 'relay'"
+            raise ConfigValidationError(msg, stack)
+        if opts.type == 'custom' and not opts.get('factory'):
+            msg = "The 'factory' key must be given when using 'custom' type"
             raise ConfigValidationError(msg, stack)
         policies = opts.get('policies', [])
         for i, p in enumerate(policies):
@@ -135,8 +144,12 @@ class ConfigValidation(object):
 
     def _check_relay(self, opts, stack):
         keydict = {'type': (basestring, True),
+                   'factory': (basestring, False),
                    'ehlo_as': (basestring, False)}
         self._check_keys(opts, keydict, stack)
+        if opts.type == 'custom' and not opts.get('factory'):
+            msg = "The 'factory' key must be given when using 'custom' type"
+            raise ConfigValidationError(msg, stack)
 
     def _check_toplevel(self, stack, program):
         keydict = {'process': (Mapping, True),

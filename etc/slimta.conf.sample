@@ -1,30 +1,14 @@
 
 process: {
   slimta: {
-    daemon: True
-    user: slimta
-    group: slimta
-    stdout: '/dev/null'
-    stderr: '/dev/null'
+    daemon: False
+    logging: @"logging.conf"
   }
 
   worker: {
-    daemon: True
-    stdout: '/dev/null'
-    stderr: '/dev/null'
+    daemon: False
+    logging: @"logging.conf"
   }
-}
-
-tls: {
-  main: {
-    certfile: '/home/slimta/cert.pem'
-    keyfile: '/home/slimta/cert.pem'
-  }
-}
-
-celery_app: {
-  BROKER_URL: 'redis://localhost/0'
-  BACKEND_URL: 'redis://localhost/0'
 }
 
 rules: @"rules.conf.sample"
@@ -37,22 +21,9 @@ edge: {
       interface: '127.0.0.1'
       port: 1025
     }
-    tls: $tls.main
     rules: $rules.inbound
   }
 
-  inbound_ssl: {
-    type: smtp
-    queue: inbound
-    listener: {
-      interface: '127.0.0.1'
-      port: 1465
-    }
-    tls: $tls.main
-    tls_immediately: True
-    rules: $rules.inbound
-  }
-  
   outbound: {
     type: smtp
     queue: outbound
@@ -60,14 +31,13 @@ edge: {
       interface: '127.0.0.1'
       port: 1587
     }
-    tls: $tls.main
     rules: $rules.outbound
   }
 }
 
 queue: {
   inbound: {
-    type: celery
+    type: memory
     relay: inbound
     policies: [
       {type: add_date_header}
@@ -78,7 +48,7 @@ queue: {
   }
 
   outbound: {
-    type: celery
+    type: memory
     relay: outbound
     policies: [
       {type: add_date_header}
@@ -100,7 +70,6 @@ relay: {
 
   outbound: {
     type: mx
-    tls: $tls.main
   }
 }
 

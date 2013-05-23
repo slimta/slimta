@@ -53,7 +53,7 @@ Manual][2] for information on configuring `slimta` to your liking, including
 more advanced and custom setups.
 
 [1]: http://slimta.org/
-[2]: http://docs.slimta.org/en/latest/manual.html
+[2]: http://docs.slimta.org/en/latest/manual/slimta.html
 [3]: http://opensource.org/licenses/MIT
 [4]: https://pypi.python.org/pypi/slimta/
 [5]: http://www.courier-mta.org/maildrop/

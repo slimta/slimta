@@ -144,6 +144,25 @@ class SlimtaState(object):
         settings = self.cfg.process.get(self.program).get('logging')
         setup_logging(settings)
 
+    def _get_tls_options(self, tls_opts):
+        tls_opts = dict(tls_opts).copy()
+        certfile = tls_opts.pop('certfile', None)
+        if certfile is not None:
+            certfile = os.path.expandvars(certfile)
+            certfile = os.path.expanduser(certfile)
+            tls_opts['certfile'] = certfile
+        keyfile = tls_opts.pop('keyfile', None)
+        if keyfile is not None:
+            keyfile = os.path.expandvars(keyfile)
+            keyfile = os.path.expanduser(keyfile)
+            tls_opts['keyfile'] = keyfile
+        ca_certs = tls_opts.pop('ca_certs', None)
+        if ca_certs is not None:
+            ca_certs = os.path.expandvars(ca_certs)
+            ca_certs = os.path.expanduser(ca_certs)
+            tls_opts['ca_certs'] = ca_certs
+        return tls_opts
+
     def _import_symbol(self, path):
         module_name, _, symbol_name = path.rpartition(':')
         if not module_name:
@@ -180,7 +199,7 @@ class SlimtaState(object):
             kwargs['pool_size'] = options.get('concurrent_connections', 5)
             kwargs['ehlo_as'] = fill_hostname_template(options.get('ehlo_as'))
             if 'tls' in options:
-                kwargs['tls'] = dict(options.tls)
+                kwargs['tls'] = self._get_tls_options(options.tls)
             new_relay = MxSmtpRelay(**kwargs)
         elif options.type == 'static':
             from slimta.relay.smtp.static import StaticSmtpRelay
@@ -195,7 +214,7 @@ class SlimtaState(object):
             kwargs['pool_size'] = options.get('concurrent_connections', 5)
             kwargs['ehlo_as'] = fill_hostname_template(options.get('ehlo_as'))
             if 'tls' in options:
-                kwargs['tls'] = dict(options.tls)
+                kwargs['tls'] = self._get_tls_options(options.tls)
             new_relay = StaticSmtpRelay(**kwargs)
         elif options.type == 'maildrop':
             from slimta.maildroprelay import MaildropRelay
@@ -274,7 +293,7 @@ class SlimtaState(object):
             port = int(options.listener.get('port', 25))
             kwargs = {}
             if options.get('tls'):
-                kwargs['tls'] = dict(options.tls)
+                kwargs['tls'] = self._get_tls_options(options.tls)
             kwargs['tls_immediately'] = options.get('tls_immediately', False)
             kwargs['validator_class'] = build_smtpedge_validators(options)
             kwargs['auth_class'] = build_smtpedge_auth(options)

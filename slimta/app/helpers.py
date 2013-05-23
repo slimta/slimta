@@ -159,7 +159,7 @@ def build_backoff_function(retry):
         def no_retries(envelope, attempts):
             return None
         return no_retries
-    maximum = retry.get('maximum', 0)
+    maximum = int(retry.get('maximum', 0))
     delay = retry.get('delay', '300')
     delay_func = eval('lambda x: '+delay, math.__dict__)
     def backoff(envelope, attempts):

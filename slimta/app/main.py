@@ -21,6 +21,8 @@
 
 from __future__ import absolute_import
 
+import os
+import os.path
 from argparse import ArgumentParser
 
 from gevent import monkey; monkey.patch_all()
@@ -71,6 +73,53 @@ def worker():
     state.drop_privileges()
 
     state.worker_loop()
+
+
+def _try_config_copy(etc_dir, conf_file, force):
+    final_path = os.path.join(etc_dir, conf_file)
+    if not force and os.path.exists(final_path):
+        while True:
+            confirm = raw_input(final_path+' already exists, overwrite? [y/N] ')
+            if confirm.lower() == 'y':
+                break
+            elif not confirm or confirm.lower() == 'n':
+                return
+    from pkg_resources import Requirement, resource_string
+    resource_name = 'etc/{0}.sample'.format(conf_file)
+    contents = resource_string(Requirement.parse('slimta'), resource_name)
+    contents = contents.replace('slimta.conf.sample', 'slimta.conf')
+    contents = contents.replace('rules.conf.sample', 'rules.conf')
+    contents = contents.replace('logging.conf.sample', 'logging.conf')
+    with open(final_path, 'w') as f:
+        f.write(contents)
+
+
+def setup():
+    argparser = ArgumentParser(description='Create starting configs for a slimta instance.')
+    argparser.add_argument('--version', action='version', version='%(prog)s '+VERSION)
+    argparser.add_argument('-e', '--etc-dir', metavar='DIR', default=None,
+                           help='Place new configs in DIR. By default, this script will prompt the user for a directory.')
+    argparser.add_argument('-f', '--force', action='store_true', default=False,
+                           help='Force overwriting if destination files exist. The user is prompted by default.')
+    args = argparser.parse_args()
+
+    etc_dir = args.etc_dir
+    default_etc_dir = '/etc/slimta'
+    if os.getuid() != 0:
+        default_etc_dir = '~/.slimta/'
+    if etc_dir is None:
+        etc_dir = raw_input('Where should slimta config files be placed? [{0}] '.format(default_etc_dir))
+        if not etc_dir:
+            etc_dir = os.path.expanduser(default_etc_dir)
+    try:
+        os.makedirs(etc_dir, 0755)
+    except OSError as (err, msg):
+        if err != 17:
+            raise
+
+    _try_config_copy(etc_dir, 'slimta.conf', args.force)
+    _try_config_copy(etc_dir, 'rules.conf', args.force)
+    _try_config_copy(etc_dir, 'logging.conf', args.force)
 
 
 # vim:et:fdm=marker:sts=4:sw=4:ts=4

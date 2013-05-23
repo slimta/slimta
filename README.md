@@ -32,7 +32,7 @@ configs are designed to work out of the box, so lets give it a shot:
     $ slimta
 
 In another terminal, let's connect to port 1025 to see if it's working. After
-the banner (the line beginning with `220`), type in `QUIT` to end the session:
+the banner (the line beginning with `220 `), type in `QUIT` to end the session:
 
     $ telnet localhost 1025
     Trying 127.0.0.1...
@@ -47,8 +47,10 @@ It's unlikely that local mail delivery will work on your system out of the box,
 unless you have configured [`maildrop`][5] delivery for your current user or
 modified `slimta.conf` to use another relay mechanism.
 
-At this point, please check out the [Usage Manual][2] for information on
-configuring `slimta` to your liking, including more advanced and custom setups.
+At this point, we're still a little ways off from where you'd probably like to
+be: actually sending and receiving email. Please check out the [Usage
+Manual][2] for information on configuring `slimta` to your liking, including
+more advanced and custom setups.
 
 [1]: http://slimta.org/
 [2]: http://docs.slimta.org/en/latest/manual.html

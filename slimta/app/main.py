@@ -84,9 +84,9 @@ def _try_config_copy(etc_dir, conf_file, force):
                 break
             elif not confirm or confirm.lower() == 'n':
                 return
-    from pkg_resources import Requirement, resource_string
+    from pkg_resources import resource_string
     resource_name = 'etc/{0}.sample'.format(conf_file)
-    contents = resource_string(Requirement.parse('slimta'), resource_name)
+    contents = resource_string('slimta.app', resource_name)
     contents = contents.replace('slimta.conf.sample', 'slimta.conf')
     contents = contents.replace('rules.conf.sample', 'rules.conf')
     contents = contents.replace('logging.conf.sample', 'logging.conf')

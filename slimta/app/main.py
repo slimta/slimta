@@ -110,7 +110,8 @@ def setup():
     if etc_dir is None:
         etc_dir = raw_input('Where should slimta config files be placed? [{0}] '.format(default_etc_dir))
         if not etc_dir:
-            etc_dir = os.path.expanduser(default_etc_dir)
+            etc_dir = default_etc_dir
+    etc_dir = os.path.expandvars(os.path.expanduser(etc_dir))
     try:
         os.makedirs(etc_dir, 0755)
     except OSError as (err, msg):

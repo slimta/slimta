@@ -112,13 +112,13 @@ def build_smtpedge_auth(options):
         def verify_secret(self, username, password, identity=None):
             try:
                 assert rules.credentials[username] == password
-            except (KeyError, AssertionError):
+            except (KeyError, AttributeError, AssertionError):
                 raise CredentialsInvalidError()
             return username
         def get_secret(self, username, identity=None):
             try:
                 return rules.credentials[username], username
-            except KeyError:
+            except (KeyError, AttributeError):
                 raise CredentialsInvalidError()
     return CustomAuth
 

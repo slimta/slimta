@@ -2,12 +2,12 @@
 process: {
   slimta: {
     daemon: False
-    logging: @"logging.conf"
+    logging: @"logging.conf.sample"
   }
 
   worker: {
     daemon: False
-    logging: @"logging.conf"
+    logging: @"logging.conf.sample"
   }
 }
 

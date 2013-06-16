@@ -145,11 +145,17 @@ class ConfigValidation(object):
     def _check_relay(self, opts, stack):
         keydict = {'type': (basestring, True),
                    'factory': (basestring, False),
-                   'ehlo_as': (basestring, False)}
+                   'ehlo_as': (basestring, False),
+                   'credentials': (Mapping, False)}
         self._check_keys(opts, keydict, stack)
         if opts.type == 'custom' and not opts.get('factory'):
             msg = "The 'factory' key must be given when using 'custom' type"
             raise ConfigValidationError(msg, stack)
+        if 'credentials' in opts:
+            creds_keydict = {'username': (basestring, True),
+                             'password': (basestring, True)}
+            self._check_keys(opts.credentials, creds_keydict,
+                             stack+['credentials'], True)
 
     def _check_toplevel(self, stack, program):
         keydict = {'process': (Mapping, True),

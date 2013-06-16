@@ -169,4 +169,8 @@ def build_backoff_function(retry):
     return backoff
 
 
+def get_relay_credentials(creds):
+    return (creds.username, creds.password)
+
+
 # vim:et:fdm=marker:sts=4:sw=4:ts=4

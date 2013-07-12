@@ -26,6 +26,7 @@ from socket import getfqdn, gethostname
 
 from slimta.edge.smtp import SmtpValidators
 from slimta.smtp.auth import Auth, CredentialsInvalidError
+from slimta.util import build_auth_from_dict
 from slimta.util.dnsbl import check_dnsbl
 from slimta.spf import EnforceSpf
 
@@ -106,16 +107,9 @@ def build_smtpedge_validators(options):
 
 def build_smtpedge_auth(options):
     rules = RuleHelpers(options)
-    if rules.credentials is None:
+    if rules.get('credentials') is None:
         return None
-    class CustomAuth(Auth):
-        def verify_secret(self, username, password, identity=None):
-            try:
-                assert rules.credentials[username] == password
-            except (KeyError, AttributeError, AssertionError):
-                raise CredentialsInvalidError()
-            return username
-    return CustomAuth
+    return build_auth_from_dict(rules.credentials)
 
 
 def add_queue_policies(queue, policy_options):

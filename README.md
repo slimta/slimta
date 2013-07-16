@@ -43,17 +43,23 @@ the banner (the line beginning with `220 `), type in `QUIT` to end the session:
     221 2.0.0 Bye
     Connection closed by foreign host.
 
-It's unlikely that local mail delivery will work on your system out of the box,
-unless you have configured [`maildrop`][5] delivery for your current user or
-modified `slimta.conf` to use another relay mechanism.
+Port 1025 is fully capable of accepting mail in the SMTP session, but is
+configured by default with the `blackhole` relay to silently discard messages.
+You can also try it out with the built-in Python SMTP libraries:
+
+    $ python
+    >>> import smtplib
+    >>> smtplib.SMTP('localhost', 1025).sendmail('test@example.com',
+                                                 ['postmaster@example.com'],
+                                                 'test message')
 
 At this point, we're still a little ways off from where you'd probably like to
-be: actually sending and receiving email. Please check out the [Usage
-Manual][2] for information on configuring `slimta` to your liking, including
-more advanced and custom setups.
+be: actually sending and receiving email to the Internet. Please check out the
+[Usage Manual][2] for information on configuring `slimta` to your liking,
+including more advanced and custom setups.
 
 [1]: http://slimta.org/
 [2]: http://docs.slimta.org/en/latest/manual/slimta.html
 [3]: http://opensource.org/licenses/MIT
 [4]: https://pypi.python.org/pypi/slimta/
-[5]: http://www.courier-mta.org/maildrop/
+

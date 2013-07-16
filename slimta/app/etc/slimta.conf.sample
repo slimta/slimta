@@ -43,7 +43,6 @@ queue: {
       {type: add_date_header}
       {type: add_messageid_header}
       {type: add_received_header}
-      {type: spamassassin}
     ]
   }
 
@@ -65,11 +64,11 @@ queue: {
 
 relay: {
   inbound: {
-    type: maildrop
+    type: blackhole
   }
 
   outbound: {
-    type: mx
+    type: blackhole
   }
 }
 

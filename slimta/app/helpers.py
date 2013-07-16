@@ -107,7 +107,7 @@ def build_smtpedge_validators(options):
 
 def build_smtpedge_auth(options):
     rules = RuleHelpers(options)
-    if rules.get('credentials') is None:
+    if rules.credentials is None:
         return None
     return build_auth_from_dict(rules.credentials)
 

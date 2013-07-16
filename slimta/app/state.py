@@ -219,6 +219,9 @@ class SlimtaState(object):
                 credentials = get_relay_credentials(options.get('credentials'))
                 kwargs['credentials'] = credentials
             new_relay = StaticSmtpRelay(**kwargs)
+        elif options.type == 'blackhole':
+            from slimta.relay.blackhole import BlackholeRelay
+            new_relay = BlackholeRelay()
         elif options.type == 'maildrop':
             from slimta.maildroprelay import MaildropRelay
             executable = options.get('executable')

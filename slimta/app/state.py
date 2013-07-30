@@ -145,6 +145,8 @@ class SlimtaState(object):
         setup_logging(settings)
 
     def _get_tls_options(self, tls_opts):
+        if not tls_opts:
+            return None
         tls_opts = dict(tls_opts).copy()
         certfile = tls_opts.pop('certfile', None)
         if certfile is not None:
@@ -298,8 +300,7 @@ class SlimtaState(object):
             ip = options.listener.get('interface', '127.0.0.1')
             port = int(options.listener.get('port', 25))
             kwargs = {}
-            if options.get('tls'):
-                kwargs['tls'] = self._get_tls_options(options.tls)
+            kwargs['tls'] = self._get_tls_options(options.get('tls'))
             kwargs['tls_immediately'] = options.get('tls_immediately', False)
             kwargs['validator_class'] = build_smtpedge_validators(options)
             kwargs['auth_class'] = build_smtpedge_auth(options)
@@ -309,6 +310,17 @@ class SlimtaState(object):
             kwargs['hostname'] = fill_hostname_template(options.get('hostname'))
             new_edge = SmtpEdge((ip, port), queue, **kwargs)
             new_edge.start()
+        elif options.type == 'wsgi':
+            from slimta.edge.wsgi import WsgiEdge
+            from .helpers import fill_hostname_template
+            hostname = fill_hostname_template(options.get('hostname'))
+            uri_pattern = options.get('uri')
+            new_edge = WsgiEdge(queue, hostname, uri_pattern)
+            ip = options.listener.get('interface', '127.0.0.1')
+            port = int(options.listener.get('port', 8080))
+            tls = self._get_tls_options(options.get('tls'))
+            server = new_edge.build_server((ip, port), tls=tls)
+            server.start()
         elif options.type == 'custom':
             new_edge = self._load_from_custom(options, queue)
         else:

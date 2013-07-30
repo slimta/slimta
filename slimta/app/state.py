@@ -317,7 +317,7 @@ class SlimtaState(object):
             uri_pattern = options.get('uri')
             new_edge = WsgiEdge(queue, hostname, uri_pattern)
             ip = options.listener.get('interface', '127.0.0.1')
-            port = int(options.listener.get('port', 8080))
+            port = int(options.listener.get('port', 8025))
             tls = self._get_tls_options(options.get('tls'))
             server = new_edge.build_server((ip, port), tls=tls)
             server.start()

@@ -121,13 +121,13 @@ def build_wsgiedge_validators(options):
                 smtp_code = '550'
                 smtp_message = '5.7.1 Sender <{0}> Not allowed'.format(sender)
                 reply = '{0}; message="{1}"'.format(smtp_code, smtp_message)
-                raise WsgiResponse('400', [('X-Smtp-Reply', reply)])
+                raise WsgiResponse('403 Forbidden', [('X-Smtp-Reply', reply)])
         def validate_recipient(self, rcpt):
             if not rules.is_recipient_ok(rcpt):
                 smtp_code = '550'
                 smtp_message = '5.7.1 Recipient <{0}> Not allowed'.format(rcpt)
                 reply = '{0}; message="{1}"'.format(smtp_code, smtp_message)
-                raise WsgiResponse('400', [('X-Smtp-Reply', reply)])
+                raise WsgiResponse('403 Forbidden', [('X-Smtp-Reply', reply)])
     return CustomValidators
 
 

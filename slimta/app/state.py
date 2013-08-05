@@ -221,6 +221,16 @@ class SlimtaState(object):
                 credentials = get_relay_credentials(options.get('credentials'))
                 kwargs['credentials'] = credentials
             new_relay = StaticSmtpRelay(**kwargs)
+        elif options.type == 'http':
+            from slimta.relay.http import HttpRelay
+            from .helpers import fill_hostname_template
+            kwargs = {}
+            kwargs['ehlo_as'] = fill_hostname_template(options.get('ehlo_as'))
+            kwargs['timeout'] = options.get('timeout', 60)
+            kwargs['idle_timeout'] = options.get('idle_timeout', 10)
+            if 'tls' in options:
+                kwargs['tls'] = self._get_tls_options(options.tls)
+            new_relay = HttpRelay(options.url, **kwargs)
         elif options.type == 'blackhole':
             from slimta.relay.blackhole import BlackholeRelay
             new_relay = BlackholeRelay()
@@ -310,7 +320,7 @@ class SlimtaState(object):
             kwargs['hostname'] = fill_hostname_template(options.get('hostname'))
             new_edge = SmtpEdge((ip, port), queue, **kwargs)
             new_edge.start()
-        elif options.type == 'wsgi':
+        elif options.type == 'http':
             from slimta.edge.wsgi import WsgiEdge
             from .helpers import build_wsgiedge_validators
             from .helpers import fill_hostname_template

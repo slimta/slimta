@@ -36,7 +36,7 @@ setup(name='slimta',
       install_requires=['python-slimta',
                         'python-slimta-celeryqueue',
                         'python-slimta-diskstorage',
-                        'python-slimta-maildrop',
+                        'python-slimta-piperelay',
                         'python-slimta-spf',
                         'config'],
       entry_points={'console_scripts': [

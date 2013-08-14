@@ -70,9 +70,10 @@ def worker():
     state.redirect_streams()
     state.daemonize()
     sleep(0.1)
-    state.drop_privileges()
 
-    state.worker_loop()
+    with state.with_pid_file():
+        state.drop_privileges()
+        state.worker_loop()
 
 
 def _try_config_copy(etc_dir, conf_file, force):

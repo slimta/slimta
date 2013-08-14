@@ -52,7 +52,16 @@ class SlimtaState(object):
         self._celery = None
 
     @contextmanager
-    def with_pid_file(self):
+    def _with_chdir(self, new_dir):
+        old_dir = os.getcwd()
+        os.chdir(new_dir)
+        try:
+            yield old_dir
+        finally:
+            os.chdir(old_dir)
+
+    @contextmanager
+    def _with_pid_file(self):
         if not self.args.pid_file:
             yield
         else:
@@ -66,15 +75,6 @@ class SlimtaState(object):
                     os.unlink(pid_file)
                 except OSError:
                     pass
-
-    @contextmanager
-    def _with_chdir(self, new_dir):
-        old_dir = os.getcwd()
-        os.chdir(new_dir)
-        try:
-            yield old_dir
-        finally:
-            os.chdir(old_dir)
 
     @contextmanager
     def _with_sighandlers(self):
@@ -360,7 +360,8 @@ class SlimtaState(object):
         from gevent.event import Event
         try:
             with self._with_sighandlers():
-                Event().wait()
+                with self._with_pid_file():
+                    Event().wait()
         except (KeyboardInterrupt, SystemExit):
             pass
 

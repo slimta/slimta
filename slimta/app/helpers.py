@@ -147,7 +147,7 @@ def add_queue_policies(queue, policy_options):
         elif policy.type == 'forward':
             forward = Forward()
             for pattern, repl in dict(policy.get('mappings', {})).items():
-                forward.add_mapping(pattern, reply)
+                forward.add_mapping(pattern, repl)
             queue.add_policy(forward)
         elif policy.type == 'spamassassin':
             host = policy.get('host', 'localhost')

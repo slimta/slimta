@@ -55,9 +55,10 @@ def slimta():
     state.redirect_streams()
     state.daemonize()
     sleep(0.1)
-    state.drop_privileges()
 
-    state.loop()
+    with state.with_pid_file():
+        state.drop_privileges()
+        state.loop()
 
 
 def worker():

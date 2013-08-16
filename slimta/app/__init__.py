@@ -19,5 +19,11 @@
 # THE SOFTWARE.
 #
 
+from __future__ import absolute_import
+
+import pkg_resources
+
+__version__ = pkg_resources.require("slimta")[0].version
+
 
 # vim:et:fdm=marker:sts=4:sw=4:ts=4

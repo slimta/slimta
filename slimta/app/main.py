@@ -28,13 +28,13 @@ from argparse import ArgumentParser
 from gevent import monkey; monkey.patch_all()
 from gevent import sleep
 
-from .core import VERSION
+from . import __version__
 from .state import SlimtaState
 
 
 def parse_args():
     argparser = ArgumentParser(description='Configurable MTA based on the python-slimta libraries.')
-    argparser.add_argument('--version', action='version', version='%(prog)s '+VERSION)
+    argparser.add_argument('--version', action='version', version='%(prog)s '+__version__)
     argparser.add_argument('-c', '--config', metavar='FILE', default=None,
                     help='Specifies a configuration file to read. If not given, the default locations ($HOME/.slimta/slimta.conf, /etc/slimta/slimta.conf) are checked.')
     argparser.add_argument('-a', '--no-daemon', dest='attached', action='store_true',

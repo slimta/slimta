@@ -21,11 +21,9 @@
 
 from setuptools import setup, find_packages
 
-from slimta.app.core import VERSION
-
 
 setup(name='slimta',
-      version=VERSION,
+      version='0.1.9',
       author='Ian Good',
       author_email='icgood@gmail.com',
       description='Configurable MTA based on the python-slimta library.',

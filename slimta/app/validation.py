@@ -159,8 +159,8 @@ class ConfigValidation(object):
 
     def _check_toplevel(self, stack, program):
         keydict = {'process': (Mapping, True),
-                   'edge': (Mapping, True),
-                   'relay': (Mapping, True),
+                   'edge': (Mapping, False),
+                   'relay': (Mapping, False),
                    'queue': (Mapping, True),
                    'celery_app': (Mapping, False)}
         self._check_keys(self.cfg, keydict, stack)
@@ -168,14 +168,16 @@ class ConfigValidation(object):
         for process, opts in self.cfg.process.iteritems():
             self._check_process(opts, stack+['process', process])
 
-        for edge, opts in self.cfg.edge.iteritems():
-            self._check_edge(opts, stack+['edge', edge])
+        if 'relay' in self.cfg:
+            for relay, opts in self.cfg.relay.iteritems():
+                self._check_relay(opts, stack+['relay', relay])
 
         for queue, opts in self.cfg.queue.iteritems():
             self._check_queue(opts, stack+['queue', queue])
 
-        for relay, opts in self.cfg.relay.iteritems():
-            self._check_relay(opts, stack+['relay', relay])
+        if 'edge' in self.cfg:
+            for edge, opts in self.cfg.edge.iteritems():
+                self._check_edge(opts, stack+['edge', edge])
 
         if program not in self.cfg.process:
             msg = "Missing required key '{0}'".format(program)

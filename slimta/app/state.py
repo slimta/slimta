@@ -264,6 +264,7 @@ class SlimtaState(object):
             store = DictStorage()
             backoff = build_backoff_function(options.get('retry'))
             new_queue = Queue(store, relay, backoff=backoff)
+            new_queue.start()
         elif options.type == 'disk':
             from slimta.queue import Queue
             from slimta.diskstorage import DiskStorage
@@ -273,6 +274,7 @@ class SlimtaState(object):
             store = DiskStorage(env_dir, meta_dir, tmp_dir)
             backoff = build_backoff_function(options.get('retry'))
             new_queue = Queue(store, relay, backoff=backoff)
+            new_queue.start()
         elif options.type == 'redis':
             from slimta.queue import Queue
             from slimta.redisstorage import RedisStorage
@@ -292,6 +294,7 @@ class SlimtaState(object):
             store = RedisStorage(**kwargs)
             backoff = build_backoff_function(options.get('retry'))
             new_queue = Queue(store, relay, backoff=backoff)
+            new_queue.start()
         elif options.type == 'proxy':
             from slimta.queue.proxy import ProxyQueue
             new_queue = ProxyQueue(relay)

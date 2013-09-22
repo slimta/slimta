@@ -23,7 +23,7 @@ from setuptools import setup, find_packages
 
 
 setup(name='slimta',
-      version='0.1.9',
+      version='0.1.10',
       author='Ian Good',
       author_email='icgood@gmail.com',
       description='Configurable MTA based on the python-slimta library.',
@@ -34,6 +34,7 @@ setup(name='slimta',
       install_requires=['python-slimta',
                         'python-slimta-celeryqueue',
                         'python-slimta-diskstorage',
+                        'python-slimta-redisstorage',
                         'python-slimta-piperelay',
                         'python-slimta-spf',
                         'config'],

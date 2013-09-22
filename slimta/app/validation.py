@@ -168,16 +168,16 @@ class ConfigValidation(object):
         for process, opts in self.cfg.process.iteritems():
             self._check_process(opts, stack+['process', process])
 
-        if 'relay' in self.cfg:
-            for relay, opts in self.cfg.relay.iteritems():
-                self._check_relay(opts, stack+['relay', relay])
+        if 'edge' in self.cfg:
+            for edge, opts in self.cfg.edge.iteritems():
+                self._check_edge(opts, stack+['edge', edge])
 
         for queue, opts in self.cfg.queue.iteritems():
             self._check_queue(opts, stack+['queue', queue])
 
-        if 'edge' in self.cfg:
-            for edge, opts in self.cfg.edge.iteritems():
-                self._check_edge(opts, stack+['edge', edge])
+        if 'relay' in self.cfg:
+            for relay, opts in self.cfg.relay.iteritems():
+                self._check_relay(opts, stack+['relay', relay])
 
         if program not in self.cfg.process:
             msg = "Missing required key '{0}'".format(program)

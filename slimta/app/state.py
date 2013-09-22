@@ -366,7 +366,14 @@ class SlimtaState(object):
         self.edges[name] = new_edge
         return new_edge
 
-    def start_edges(self):
+    def start_everything(self):
+        if 'relay' in self.cfg:
+            for name, options in dict(self.cfg.relay).items():
+                self._start_relay(name, options)
+
+        for name, options in dict(self.cfg.queue).items():
+            self._start_queue(name, options)
+
         if 'edge' in self.cfg:
             for name, options in dict(self.cfg.edge).items():
                 self._start_edge(name, options)

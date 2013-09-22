@@ -358,8 +358,9 @@ class SlimtaState(object):
         return new_edge
 
     def start_edges(self):
-        for name, options in dict(self.cfg.edge).items():
-            self._start_edge(name, options)
+        if 'edge' in self.cfg:
+            for name, options in dict(self.cfg.edge).items():
+                self._start_edge(name, options)
 
     def worker_loop(self):
         try:

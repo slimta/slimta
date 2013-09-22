@@ -276,14 +276,20 @@ class SlimtaState(object):
         elif options.type == 'redis':
             from slimta.queue import Queue
             from slimta.redisstorage import RedisStorage
-            host = options.get('host', 'localhost')
-            port = int(options.get('port', 6379))
-            db = int(options.get('db', 0))
-            password = options.get('password')
-            socket_timeout = float(options.get('socket_timeout'))
-            prefix = options.get('prefix', 'slimta:')
-            store = RedisStorage(host, port, db, password, socket_timeout,
-                                 prefix)
+            kwargs = {}
+            if 'host' in options:
+                kwargs['host'] = options.host
+            if 'port' in options:
+                kwargs['port'] = int(options.port)
+            if 'db' in options:
+                kwargs['db'] = int(options.db)
+            if 'password' in options:
+                kwargs['password'] = options.password
+            if 'socket_timeout' in options:
+                kwargs['socket_timeout'] = float(options.socket_timeout)
+            if 'prefix' in options:
+                kwargs['prefix'] = options.prefix
+            store = RedisStorage(**kwargs)
             backoff = build_backoff_function(options.get('retry'))
             new_queue = Queue(store, relay, backoff=backoff)
         elif options.type == 'proxy':

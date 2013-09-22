@@ -49,7 +49,7 @@ def slimta():
     state = SlimtaState('slimta')
     state.load_config(*parse_args())
 
-    state.start_edges()
+    state.start_everything()
 
     state.setup_logging()
     state.redirect_streams()

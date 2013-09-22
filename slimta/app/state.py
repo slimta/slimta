@@ -277,10 +277,10 @@ class SlimtaState(object):
             from slimta.queue import Queue
             from slimta.redisstorage import RedisStorage
             host = options.get('host', 'localhost')
-            port = options.get('port', 6379)
-            db = options.get('db', 0)
+            port = int(options.get('port', 6379))
+            db = int(options.get('db', 0))
             password = options.get('password')
-            socket_timeout = options.get('socket_timeout')
+            socket_timeout = float(options.get('socket_timeout'))
             prefix = options.get('prefix', 'slimta:')
             store = RedisStorage(host, port, db, password, socket_timeout,
                                  prefix)

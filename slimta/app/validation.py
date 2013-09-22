@@ -120,11 +120,11 @@ class ConfigValidation(object):
 
     def _check_queue(self, opts, stack):
         keydict = {'type': (basestring, True),
-                   'relay': (basestring, True),
+                   'relay': (basestring, False),
                    'factory': (basestring, False),
                    'policies': (Sequence, False)}
         self._check_keys(opts, keydict, stack)
-        if not self._check_ref('relay', opts.relay):
+        if 'relay' in opts and not self._check_ref('relay', opts.relay):
             msg = "No match for reference key 'relay'"
             raise ConfigValidationError(msg, stack)
         if opts.type == 'custom' and not opts.get('factory'):

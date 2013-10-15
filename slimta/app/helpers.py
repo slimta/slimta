@@ -29,7 +29,6 @@ from slimta.edge.wsgi import WsgiValidators, WsgiResponse
 from slimta.smtp.auth import Auth, CredentialsInvalidError
 from slimta.util import build_auth_from_dict
 from slimta.util.dnsbl import check_dnsbl
-from slimta.spf import EnforceSpf
 
 from slimta.policy.forward import Forward
 from slimta.policy.split import RecipientSplit, RecipientDomainSplit
@@ -75,6 +74,7 @@ class RuleHelpers(object):
 
     def get_mail_decorator(self):
         if self.reject_spf:
+            from slimta.spf import EnforceSpf
             spf = EnforceSpf()
             msg = '5.7.1 Access denied; {reason}'
             for spf_type in self.reject_spf:

@@ -1,0 +1,12 @@
+[Unit]
+Description = Slim Mail Transfer Agent
+
+[Service]
+Type = forking
+PIDFile = $service_pidfile
+ExecStart = $service_daemon --daemon \
+ --config-file $service_config \
+ --pid-file $service_pidfile
+
+[Install]
+WantedBy = multi-user.target

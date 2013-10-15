@@ -92,17 +92,21 @@ def _setup_inits(args):
         return
     with open(init_file, 'w') as f:
         f.write(contents)
-        os.fchmod(f.fileno(), 0755)
+        if args.type in ('lsb', 'systemv'):
+            os.fchmod(f.fileno(), 0755)
 
     if args.enable:
         if args.type == 'lsb':
             cmd = 'update-rc.d {0} defaults'.format(args.name)
         elif args.type == 'sysv':
             cmd = 'chkconfig --add {0}'.format(args.name)
-        p = subprocess.Popen(cmd, shell=True)
-        p.communicate()
-        if p.returncode != 0:
-            sys.exit(p.returncode)
+        else:
+            cmd = None
+        if cmd:
+            p = subprocess.Popen(cmd, shell=True)
+            p.communicate()
+            if p.returncode != 0:
+                sys.exit(p.returncode)
 
 
 def setup():
@@ -118,7 +122,7 @@ def setup():
     config_parser.set_defaults(action='config')
 
     init_parser = subparsers.add_parser('init', help='Setup Init Scripts')
-    init_parser.add_argument('-t', '--type', required=True, choices=['lsb', 'sysv'],
+    init_parser.add_argument('-t', '--type', required=True, choices=['lsb', 'systemv', 'systemd'],
                            help='Type of init script to create.')
     init_parser.add_argument('-n', '--name', metavar='NAME', default='slimta',
                            help='Use NAME as the name of the service, default \'%(default)s\'.')

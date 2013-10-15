@@ -24,7 +24,7 @@ Install `slimta` from [PyPi][4]:
 Pip should pull in all the required dependencies. Next, we create the basic
 configuration files:
 
-    $ slimta-setup
+    $ slimta-setup config
 
 This creates 3 files, in `~/.slimta/` or wherever you specified. The sample
 configs are designed to work out of the box, so lets give it a shot:

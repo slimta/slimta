@@ -33,7 +33,6 @@ from config import Config, ConfigError, ConfigInputStream
 import slimta.system
 
 from .validation import ConfigValidation, ConfigValidationError
-from .celery import get_celery_app, get_celery_worker
 from .logging import setup_logging
 
 
@@ -315,6 +314,7 @@ class SlimtaState(object):
 
     @property
     def celery(self):
+        from .celery import get_celery_app
         if not self._celery:
             self._celery = get_celery_app(self.cfg)
         return self._celery
@@ -382,6 +382,7 @@ class SlimtaState(object):
                 self._start_edge(name, options)
 
     def worker_loop(self):
+        from .celery import get_celery_worker
         try:
             with self._with_sighandlers():
                 with self._with_pid_file():

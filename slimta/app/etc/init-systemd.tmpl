@@ -5,7 +5,7 @@ Description = Slim Mail Transfer Agent
 Type = forking
 PIDFile = $service_pidfile
 ExecStart = $service_daemon --daemon \
- --config-file $service_config \
+ --config $service_config \
  --pid-file $service_pidfile
 
 [Install]

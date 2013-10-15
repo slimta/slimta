@@ -369,12 +369,12 @@ class SlimtaState(object):
     def worker_loop(self):
         from .celery import get_celery_worker
 
-        with slimta.system.PidFile(self.args.pid_file):
-            self.start_celery_queues()
+        self.start_celery_queues()
 
-            self.setup_logging()
-            self.redirect_streams()
-            self.daemonize()
+        self.setup_logging()
+        self.redirect_streams()
+        self.daemonize()
+        with slimta.system.PidFile(self.args.pid_file):
             sleep(0.1)
             self.drop_privileges()
 
@@ -387,12 +387,12 @@ class SlimtaState(object):
     def loop(self):
         from gevent.event import Event
 
-        with slimta.system.PidFile(self.args.pid_file):
-            self.start_everything()
+        self.start_everything()
 
-            self.setup_logging()
-            self.redirect_streams()
-            self.daemonize()
+        self.setup_logging()
+        self.redirect_streams()
+        self.daemonize()
+        with slimta.system.PidFile(self.args.pid_file):
             sleep(0.1)
             self.drop_privileges()
 

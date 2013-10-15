@@ -23,7 +23,7 @@ from setuptools import setup, find_packages
 
 
 setup(name='slimta',
-      version='0.1.10',
+      version='0.1.11',
       author='Ian Good',
       author_email='icgood@gmail.com',
       description='Configurable MTA based on the python-slimta library.',
@@ -42,9 +42,9 @@ setup(name='slimta',
       entry_points={'console_scripts': [
               'slimta = slimta.app.main:slimta',
               'slimta-worker = slimta.app.main:worker',
-              'slimta-setup = slimta.app.main:setup',
+              'slimta-setup = slimta.app.setup:setup',
           ]},
-      package_data={'slimta.app': ['etc/*.conf.sample']},
+      package_data={'slimta.app': ['etc/*.conf.sample', 'etc/init-*.tmpl']},
       classifiers=['Development Status :: 3 - Alpha',
                    'Topic :: Communications :: Email :: Mail Transport Agents',
                    'Intended Audience :: Information Technology',

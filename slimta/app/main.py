@@ -39,8 +39,11 @@ def parse_args():
                     help='Specifies a configuration file to read. If not given, the default locations ($HOME/.slimta/slimta.conf, /etc/slimta/slimta.conf) are checked.')
     argparser.add_argument('-a', '--no-daemon', dest='attached', action='store_true',
                     help='Override configs and force the process to remain attached to the terminal.')
+    argparser.add_argument('-d', '--daemon', dest='attached', action='store_false',
+                    help='Override configs and force the process to daemonize.')
     argparser.add_argument('-p', '--pid-file', metavar='FILE', default=None,
                     help='Store process ID in FILE during execution.')
+    argparser.set_defaults(attached=None)
 
     return argparser, argparser.parse_args()
 

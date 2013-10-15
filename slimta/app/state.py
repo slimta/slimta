@@ -137,7 +137,9 @@ class SlimtaState(object):
 
     def daemonize(self):
         flag = self.cfg.process.get(self.program).get('daemon', False)
-        if flag and not self.args.attached:
+        if self.args.attached is None and flag:
+            slimta.system.daemonize()
+        elif not self.args.attached:
             slimta.system.daemonize()
 
     def setup_logging(self):

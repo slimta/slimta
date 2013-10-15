@@ -87,7 +87,12 @@ def _setup_inits(args):
                                     service_config=args.config_file,
                                     service_daemon=args.daemon,
                                     service_pidfile=pid_file)
-    init_file = os.path.join(args.init_dir, args.name)
+    if args.type == 'systemd':
+        init_dir = args.init_dir or '/etc/systemd/system'
+        init_file = os.path.join(init_dir, '{0}.service'.format(args.name))
+    else:
+        init_dir = args.init_dir or '/etc/init.d'
+        init_file = os.path.join(init_dir, args.name)
     if not _confirm_overwrite(init_file):
         return
     with open(init_file, 'w') as f:
@@ -130,8 +135,8 @@ def setup():
                            help='Use FILE as the slimta configuration file in the init script.')
     init_parser.add_argument('-d', '--daemon', required=True,
                            help='Use DAEMON as the command to execute in the init script.')
-    init_parser.add_argument('--init-dir', metavar='DIR', default='/etc/init.d',
-                           help='Put resulting init script in DIR, default %(default)s.')
+    init_parser.add_argument('--init-dir', metavar='DIR', default=None,
+                           help='Put resulting init script in DIR instead of the system default.')
     init_parser.add_argument('--pid-dir', metavar='DIR', default='/var/run',
                            help='Put pid files in DIR, default %(default)s.')
     init_parser.add_argument('--enable', action='store_true',

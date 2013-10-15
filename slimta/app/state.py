@@ -30,6 +30,7 @@ from functools import wraps
 from contextlib import contextmanager
 
 from config import Config, ConfigError, ConfigInputStream
+from gevent import sleep
 import slimta.system
 
 from .validation import ConfigValidation, ConfigValidationError
@@ -58,22 +59,6 @@ class SlimtaState(object):
             yield old_dir
         finally:
             os.chdir(old_dir)
-
-    @contextmanager
-    def _with_pid_file(self):
-        if not self.args.pid_file:
-            yield
-        else:
-            pid_file = os.path.abspath(self.args.pid_file)
-            with open(pid_file, 'w') as f:
-                f.write('{0}\n'.format(os.getpid()))
-            try:
-                yield
-            finally:
-                try:
-                    os.unlink(pid_file)
-                except OSError:
-                    pass
 
     @contextmanager
     def _with_sighandlers(self):
@@ -383,21 +368,39 @@ class SlimtaState(object):
 
     def worker_loop(self):
         from .celery import get_celery_worker
-        try:
-            with self._with_sighandlers():
-                with self._with_pid_file():
+
+        with slimta.system.pid_file(self.args.pid_file):
+            self.start_celery_queues()
+
+            self.setup_logging()
+            self.redirect_streams()
+            self.daemonize()
+            sleep(0.1)
+            self.drop_privileges()
+
+            try:
+                with self._with_sighandlers():
                     get_celery_worker(self.celery).run()
-        except (KeyboardInterrupt, SystemExit):
-            pass
+            except (KeyboardInterrupt, SystemExit):
+                pass
 
     def loop(self):
         from gevent.event import Event
-        try:
-            with self._with_sighandlers():
-                with self._with_pid_file():
+
+        with slimta.system.pid_file(self.args.pid_file):
+            self.start_everything()
+
+            self.setup_logging()
+            self.redirect_streams()
+            self.daemonize()
+            sleep(0.1)
+            self.drop_privileges()
+
+            try:
+                with self._with_sighandlers():
                     Event().wait()
-        except (KeyboardInterrupt, SystemExit):
-            pass
+            except (KeyboardInterrupt, SystemExit):
+                pass
 
 
 # vim:et:fdm=marker:sts=4:sw=4:ts=4

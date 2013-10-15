@@ -21,11 +21,9 @@
 
 from __future__ import absolute_import
 
-import os.path
 from argparse import ArgumentParser
 
 from gevent import monkey; monkey.patch_all()
-from gevent import sleep
 
 from . import __version__
 from .state import SlimtaState
@@ -47,32 +45,16 @@ def parse_args():
     return argparser, argparser.parse_args()
 
 
-def slimta():
+def main():
     state = SlimtaState('slimta')
     state.load_config(*parse_args())
-
-    state.start_everything()
-
-    state.setup_logging()
-    state.redirect_streams()
-    state.daemonize()
-    sleep(0.1)
-    state.drop_privileges()
 
     state.loop()
 
 
-def worker():
+def worker_main():
     state = SlimtaState('worker')
     state.load_config(*parse_args())
-
-    state.start_celery_queues()
-
-    state.setup_logging()
-    state.redirect_streams()
-    state.daemonize()
-    sleep(0.1)
-    state.drop_privileges()
 
     state.worker_loop()
 

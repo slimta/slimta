@@ -93,9 +93,10 @@ class SlimtaState(object):
             config_file = os.path.expanduser(config_file)
             config_dir = os.path.abspath(os.path.dirname(config_file))
             config_base = os.path.basename(config_file)
-            with self._with_chdir(config_dir):
-                if os.path.exists(config_base):
-                    return Config(config_base), config_file
+            if os.path.isdir(config_dir):
+                with self._with_chdir(config_dir):
+                    if os.path.exists(config_base):
+                        return Config(config_base), config_file
         return None, None
 
     def load_config(self, argparser, args):

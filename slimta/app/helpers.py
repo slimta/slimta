@@ -63,7 +63,7 @@ class RuleHelpers(object):
         self.scanner = self._get_scanner(rules.get('reject_spam'))
 
     def _get_scanner(self, options):
-        if not options:
+        if options is None:
             return None
         type = options.get('type', 'spamassassin')
         if type == 'spamassassin':

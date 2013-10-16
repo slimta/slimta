@@ -101,12 +101,13 @@ def _setup_inits(args):
             os.fchmod(f.fileno(), 0755)
 
     if args.enable:
+        cmd = None
         if args.type == 'lsb':
             cmd = 'update-rc.d {0} defaults'.format(args.name)
-        elif args.type == 'sysv':
+        elif args.type == 'systemv':
             cmd = 'chkconfig --add {0}'.format(args.name)
-        else:
-            cmd = None
+        elif args.type == 'systemd':
+            cmd = 'systemctl enable {0}'.format(args.name)
         if cmd:
             p = subprocess.Popen(cmd, shell=True)
             p.communicate()

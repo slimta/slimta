@@ -115,7 +115,8 @@ class ConfigValidation(object):
                              'reject_spf': (Sequence, False),
                              'only_senders': (Sequence, False),
                              'only_recipients': (Sequence, False),
-                             'require_credentials': (Mapping, False)}
+                             'require_credentials': (Mapping, False),
+                             'scan': (Mapping, False)}
             self._check_keys(opts.rules, rules_keydict, stack+['rules'], True)
 
     def _check_queue(self, opts, stack):

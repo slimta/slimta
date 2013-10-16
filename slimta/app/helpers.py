@@ -37,6 +37,12 @@ from slimta.policy.headers import AddDateHeader, AddMessageIdHeader, \
                                   AddReceivedHeader
 
 
+def _get_spamassassin_object(options):
+    host = options.get('host', 'localhost')
+    port = int(options.get('port', 783))
+    return SpamAssassin((host, port))
+
+
 class RuleHelpers(object):
 
     @staticmethod
@@ -54,6 +60,15 @@ class RuleHelpers(object):
         self.only_rcpts = rules.get('only_recipients')
         self.credentials = rules.get('require_credentials')
         self.reject_spf = rules.get('reject_spf')
+        self.scanner = self._get_scanner(rules.get('reject_spam'))
+
+    def _get_scanner(self, options):
+        if not options:
+            return None
+        type = options.get('type', 'spamassassin')
+        if type == 'spamassassin':
+            return _get_spamassassin_object(options)
+        return None
 
     def is_sender_ok(self, validators, sender):
         if self.only_senders is not None and sender not in self.only_senders:
@@ -87,6 +102,12 @@ class RuleHelpers(object):
         if self.banner:
             reply.message = self.banner
 
+    def reject_spam(self, data):
+        if self.scanner:
+            is_spam, info = self.scanner.scan(data)
+            return is_spam
+        return False
+
 
 def build_smtpedge_validators(options):
     rules = RuleHelpers(options)
@@ -103,6 +124,10 @@ def build_smtpedge_validators(options):
             if not rules.is_recipient_ok(rcpt):
                 reply.code = '550'
                 reply.message = '5.7.1 Recipient <{0}> Not allowed'.format(rcpt)
+        def handle_have_data(self, reply, data):
+            if rules.reject_spam(data):
+                reply.code = '554'
+                reply.message = '5.6.0 Message content rejected'
     return CustomValidators
 
 
@@ -150,9 +175,7 @@ def add_queue_policies(queue, policy_options):
                 forward.add_mapping(pattern, repl)
             queue.add_policy(forward)
         elif policy.type == 'spamassassin':
-            host = policy.get('host', 'localhost')
-            port = int(policy.get('port', 783))
-            queue.add_policy(SpamAssassin((host, port)))
+            queue.add_policy(_get_spamassassin_object(policy))
 
 
 def fill_hostname_template(val):

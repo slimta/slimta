@@ -93,7 +93,7 @@ def _setup_inits(args):
     elif args.type == 'lsb':
         init_dir = args.init_dir or '/etc/init.d'
         init_file = os.path.join(init_dir, args.name)
-    if not _confirm_overwrite(init_file):
+    if not _confirm_overwrite(init_file, args.force):
         return
     with open(init_file, 'w') as f:
         f.write(contents)

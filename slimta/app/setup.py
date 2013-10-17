@@ -90,24 +90,22 @@ def _setup_inits(args):
     if args.type == 'systemd':
         init_dir = args.init_dir or '/etc/systemd/system'
         init_file = os.path.join(init_dir, '{0}.service'.format(args.name))
-    else:
+    elif args.type == 'ldif':
         init_dir = args.init_dir or '/etc/init.d'
         init_file = os.path.join(init_dir, args.name)
     if not _confirm_overwrite(init_file):
         return
     with open(init_file, 'w') as f:
         f.write(contents)
-        if args.type in ('lsb', 'systemv'):
+        if args.type in ('lsb', ):
             os.fchmod(f.fileno(), 0755)
 
     if args.enable:
         cmd = None
-        if args.type == 'lsb':
-            cmd = 'update-rc.d {0} defaults'.format(args.name)
-        elif args.type == 'systemv':
-            cmd = 'chkconfig --add {0}'.format(args.name)
-        elif args.type == 'systemd':
+        if args.type == 'systemd':
             cmd = 'systemctl enable {0}'.format(args.name)
+        elif args.type == 'lsb':
+            cmd = 'update-rc.d {0} defaults'.format(args.name)
         if cmd:
             p = subprocess.Popen(cmd, shell=True)
             p.communicate()
@@ -128,7 +126,7 @@ def setup():
     config_parser.set_defaults(action='config')
 
     init_parser = subparsers.add_parser('init', help='Setup Init Scripts')
-    init_parser.add_argument('-t', '--type', required=True, choices=['lsb', 'systemv', 'systemd'],
+    init_parser.add_argument('-t', '--type', required=True, choices=['lsb', 'systemd'],
                            help='Type of init script to create.')
     init_parser.add_argument('-n', '--name', metavar='NAME', default='slimta',
                            help='Use NAME as the name of the service, default \'%(default)s\'.')

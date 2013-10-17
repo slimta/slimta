@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 ### BEGIN INIT INFO
 # Provides:          $service_name
 # Required-Start:
@@ -10,85 +10,57 @@
 #                    the configuration in place.
 ### END INIT INFO
 
-# Using the lsb functions to perform the operations.
 . /lib/lsb/init-functions
-# Process name ( For display )
+
+# Service name (for display)
 NAME=$service_name
-# Daemon name, where is the actual executable
+# Path to the daemon
 DAEMON=$service_daemon
-# pid file for the daemon
+# PID file for this instance of the daemon
 PIDFILE=$service_pidfile
-# Config file for the process
+# Config file for the service
 CONFIGFILE=$service_config
 
-# If the daemon is not there, then exit.
-test -x $DAEMON || exit 5
+function start {
+    log_daemon_msg "Starting $NAME"
+    start_daemon -p $PIDFILE $DAEMON --daemon \
+        --config $CONFIGFILE \
+        --pid-file $PIDFILE
+    log_end_msg $?
+}
+
+function stop {
+    log_daemon_msg "Stopping $NAME"
+    killproc -p $PIDFILE $DAEMON
+    log_end_msg $?
+}
+
+function status {
+    status_of_proc -p $PIDFILE $DAEMON $NAME && exit 0 || exit $?
+}
 
 case $1 in
     start)
-        # Checked the PID file exists and check the actual status of process
-        if [ -e $PIDFILE ]; then
-            status_of_proc -p $PIDFILE $DAEMON "$NAME process" && \
-                status="0" || status="$?"
-            # If the status is SUCCESS then don't need to start again.
-            if [ $status = "0" ]; then
-                exit # Exit
-            fi
-        fi
-
-        [ -x $DAEMON ] || exit 5
-        [ -f $CONFIGFILE ] || exit 6
-
-        # Start the daemon.
-        log_daemon_msg "Starting the process" "$NAME"
-        # Start the daemon with the help of start-stop-daemon
-        # Log the message appropriately
-        if start-stop-daemon --start --quiet --oknodo --pidfile $PIDFILE \
-            --exec $DAEMON -- --daemon --config $CONFIGFILE --pid-file \
-            $PIDFILE ; then
-            log_end_msg 0
-        else
-            log_end_msg 1
-        fi
+        start
         ;;
 
     stop)
-        # Stop the daemon.
-        if [ -e $PIDFILE ]; then
-            status_of_proc -p $PIDFILE $DAEMON \
-                "Stopping the $NAME process" && status="0" || status="$?"
-            if [ "$status" = 0 ]; then
-                start-stop-daemon --stop --quiet --oknodo --pidfile $PIDFILE
-            fi
-        else
-            log_daemon_msg "$NAME process is not running"
-            log_end_msg 0
-        fi
+        stop
         ;;
 
     restart)
-        # Restart the daemon.
-        $0 stop && $0 start
+        start
+        stop
         ;;
 
     status)
-        # Check the status of the process.
-        if [ -e $PIDFILE ]; then
-            status_of_proc -p $PIDFILE $DAEMON "$NAME process" && \
-                exit 0 || exit $?
-        else
-            log_daemon_msg "$NAME Process is not running"
-            log_end_msg 0
-        fi
+        status
         ;;
 
     *)
-        # For invalid arguments, print the usage message.
         echo "Usage: $0 {start|stop|restart|status}"
         exit 2
         ;;
 esac
-
-
 
 # vim:sw=4:ts=4:sts=4:et:ai:ft=sh:

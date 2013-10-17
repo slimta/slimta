@@ -90,7 +90,7 @@ def _setup_inits(args):
     if args.type == 'systemd':
         init_dir = args.init_dir or '/etc/systemd/system'
         init_file = os.path.join(init_dir, '{0}.service'.format(args.name))
-    elif args.type == 'ldif':
+    elif args.type == 'lsb':
         init_dir = args.init_dir or '/etc/init.d'
         init_file = os.path.join(init_dir, args.name)
     if not _confirm_overwrite(init_file):

@@ -23,7 +23,7 @@ from setuptools import setup, find_packages
 
 
 setup(name='slimta',
-      version='0.1.13',
+      version='0.1.14',
       author='Ian Good',
       author_email='icgood@gmail.com',
       description='Configurable MTA based on the python-slimta library.',

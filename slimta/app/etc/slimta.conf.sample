@@ -4,11 +4,6 @@ process: {
     daemon: False
     logging: @"logging.conf.sample"
   }
-
-  worker: {
-    daemon: False
-    logging: @"logging.conf.sample"
-  }
 }
 
 rules: @"rules.conf.sample"

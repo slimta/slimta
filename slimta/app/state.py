@@ -127,6 +127,11 @@ class SlimtaState(object):
         elif not self.args.attached:
             slimta.system.daemonize()
 
+    def create_pid_file(self):
+        args_pid_file = self.args.pid_file
+        cfg_pid_file = self.cfg.process.get(self.program).get('pid_file')
+        return slimta.system.PidFile(args_pid_file or cfg_pid_file)
+
     def setup_logging(self):
         settings = self.cfg.process.get(self.program).get('logging')
         setup_logging(settings)
@@ -392,7 +397,7 @@ class SlimtaState(object):
         self.setup_logging()
         self.redirect_streams()
         self.daemonize()
-        with slimta.system.PidFile(self.args.pid_file):
+        with self.create_pid_file():
             sleep(0.1)
             self.drop_privileges()
 

@@ -76,6 +76,7 @@ class ConfigValidation(object):
             msg = "Unexpected process type '{0}'".format(stack[-1])
             raise ConfigValidationError(msg, stack[:-1])
         keydict = {'daemon': (bool, False),
+                   'pid_file': (basestring, False),
                    'user': (basestring, False),
                    'group': (basestring, False),
                    'stdout': (basestring, False),

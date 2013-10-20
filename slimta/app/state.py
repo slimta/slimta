@@ -42,8 +42,8 @@ class SlimtaState(object):
     _global_config_files = [os.path.expanduser('~/.slimta/slimta.conf'),
                             '/etc/slimta/slimta.conf']
 
-    def __init__(self, program):
-        self.program = program
+    def __init__(self):
+        self.program = os.path.basename(sys.argv[0])
         self.args = None
         self.cfg = None
         self.edges = {}
@@ -87,6 +87,9 @@ class SlimtaState(object):
         if self.args:
             return
         self.args = args
+
+        if args.process_name:
+            self.program = args.process_name
 
         files = self._global_config_files
         if args.config:

@@ -34,6 +34,8 @@ def parse_args():
     argparser.add_argument('--version', action='version', version='%(prog)s '+__version__)
     argparser.add_argument('-c', '--config', metavar='FILE', default=None,
                     help='Specifies a configuration file to read. If not given, the default locations ($HOME/.slimta/slimta.conf, /etc/slimta/slimta.conf) are checked.')
+    argparser.add_argument('-n', '--process-name', metavar='NAME', default=None,
+                    help='Use the process sub-section NAME for configuration. By default, the name of the executable is used.')
     argparser.add_argument('-a', '--no-daemon', dest='attached', action='store_true',
                     help='Override configs and force the process to remain attached to the terminal.')
     argparser.add_argument('-d', '--daemon', dest='attached', action='store_false',
@@ -46,14 +48,14 @@ def parse_args():
 
 
 def main():
-    state = SlimtaState('slimta')
+    state = SlimtaState()
     state.load_config(*parse_args())
 
     state.loop()
 
 
 def worker_main():
-    state = SlimtaState('worker')
+    state = SlimtaState()
     state.load_config(*parse_args())
 
     state.worker_loop()

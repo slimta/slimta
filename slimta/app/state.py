@@ -29,9 +29,10 @@ import logging
 from importlib import import_module
 from functools import wraps
 from contextlib import contextmanager
+from weakref import WeakValueDictionary
 
 from config import Config, ConfigError, ConfigInputStream
-from gevent import sleep
+from gevent import sleep, socket
 import slimta.system
 
 from .validation import ConfigValidation, ConfigValidationError
@@ -47,6 +48,7 @@ class SlimtaState(object):
         self.program = os.path.basename(sys.argv[0])
         self.args = args
         self.cfg = None
+        self.listeners = WeakValueDictionary()
         self.edges = {}
         self.queues = {}
         self.relays = {}
@@ -183,6 +185,39 @@ class SlimtaState(object):
     def _load_from_custom(self, options, *extra):
         factory = self._import_symbol(options.factory)
         return factory(options, *extra)
+
+    def _get_listener(self, options, defaults):
+        key = hash(tuple(options.iteritems()))
+        if key in self.listeners:
+            return self.listeners[key]
+        type = options.get('type', 'tcp')
+        new_listener = None
+        if type in ('tcp', 'udp', 'unix'):
+            if type == 'tcp':
+                interface = options.get('interface', defaults.get('interface'))
+                port = int(options.get('port', defaults.get('port')))
+                new_listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                address = (interface, port)
+            elif type == 'udp':
+                interface = options.get('interface', defaults.get('interface'))
+                port = int(options.get('port', defaults.get('port')))
+                new_listener = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                address = (interface, port)
+            elif type == 'unix':
+                new_listener = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+                address = options.get('path', defaults.get('path'))
+            new_listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            new_listener.setblocking(0)
+            new_listener.bind(address)
+            if type != 'udp':
+                backlog = int(options.get('backlog', 256))
+                new_listener.listen(backlog)
+        elif type == 'custom':
+            new_listener = self._load_from_custom(options)
+        else:
+            raise ValueError('Unknown listener type: {0}'.format(type))
+        self.listeners[key] = new_listener
+        return new_listener
 
     def _start_relay(self, name, options=None):
         if name in self.relays:
@@ -334,8 +369,8 @@ class SlimtaState(object):
             from slimta.edge.smtp import SmtpEdge
             from .helpers import build_smtpedge_validators, build_smtpedge_auth
             from .helpers import fill_hostname_template
-            ip = options.listener.get('interface', '127.0.0.1')
-            port = int(options.listener.get('port', 25))
+            listener_defaults = {'interface': '127.0.0.1', 'port': 25}
+            listener = self._get_listener(options.listener, listener_defaults)
             kwargs = {}
             kwargs['tls'] = self._get_tls_options(options.get('tls'))
             kwargs['tls_immediately'] = options.get('tls_immediately', False)
@@ -343,9 +378,9 @@ class SlimtaState(object):
             kwargs['auth_class'] = build_smtpedge_auth(options)
             kwargs['command_timeout'] = 20.0
             kwargs['data_timeout'] = 30.0
-            kwargs['max_size'] = options.get('max_size', 10485760)
+            kwargs['max_size'] = int(options.get('max_size', 10485760))
             kwargs['hostname'] = fill_hostname_template(options.get('hostname'))
-            new_edge = SmtpEdge((ip, port), queue, **kwargs)
+            new_edge = SmtpEdge(listener, queue, **kwargs)
             new_edge.start()
         elif options.type == 'http':
             from slimta.edge.wsgi import WsgiEdge
@@ -355,10 +390,10 @@ class SlimtaState(object):
             uri_pattern = options.get('uri')
             validator_class = build_wsgiedge_validators(options)
             new_edge = WsgiEdge(queue, hostname, validator_class, uri_pattern)
-            ip = options.listener.get('interface', '127.0.0.1')
-            port = int(options.listener.get('port', 8025))
+            listener_defaults = {'interface': '127.0.0.1', 'port': 8025}
+            listener = self._get_listener(options.listener, listener_defaults)
             tls = self._get_tls_options(options.get('tls'))
-            server = new_edge.build_server((ip, port), tls=tls)
+            server = new_edge.build_server(listener, tls=tls)
             server.start()
         elif options.type == 'custom':
             new_edge = self._load_from_custom(options, queue)

@@ -25,6 +25,7 @@ import sys
 import os
 import os.path
 import warnings
+import logging
 from importlib import import_module
 from functools import wraps
 from contextlib import contextmanager
@@ -42,9 +43,9 @@ class SlimtaState(object):
     _global_config_files = [os.path.expanduser('~/.slimta/slimta.conf'),
                             '/etc/slimta/slimta.conf']
 
-    def __init__(self):
+    def __init__(self, args):
         self.program = os.path.basename(sys.argv[0])
-        self.args = None
+        self.args = args
         self.cfg = None
         self.edges = {}
         self.queues = {}
@@ -83,26 +84,30 @@ class SlimtaState(object):
                         return Config(config_base), config_file
         return None, None
 
-    def load_config(self, argparser, args):
-        if self.args:
-            return
-        self.args = args
-
-        if args.process_name:
-            self.program = args.process_name
+    def load_config(self, argparser=None):
+        if self.args.process_name:
+            self.program = self.args.process_name
 
         files = self._global_config_files
-        if args.config:
-            files = [args.config]
+        if self.args.config:
+            files = [self.args.config]
 
         self.cfg, config_file = self._try_configs(files)
+        err = None
         if self.cfg:
             try:
                 ConfigValidation.check(self.cfg, self.program)
             except ConfigValidationError as e:
-                argparser.error(str(e))
+                err = str(e)
         else:
-            argparser.error('No configuration files found!')
+            err = 'No configuration files found!'
+
+        if err:
+            if argparser:
+                argparser.error(err)
+            else:
+                logging.getLogger('slimta.app').error(err)
+                sys.exit(2)
 
     def drop_privileges(self):
         process_options = self.cfg.process.get(self.program)

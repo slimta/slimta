@@ -48,15 +48,17 @@ def parse_args():
 
 
 def main():
-    state = SlimtaState()
-    state.load_config(*parse_args())
+    argparser, args = parse_args()
+    state = SlimtaState(args)
+    state.load_config(argparser=argparser)
 
     state.loop()
 
 
 def worker_main():
-    state = SlimtaState()
-    state.load_config(*parse_args())
+    argparser, args = parse_args()
+    state = SlimtaState(args)
+    state.load_config(argparser=argparser)
 
     state.worker_loop()
 

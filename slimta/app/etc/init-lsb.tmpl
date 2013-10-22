@@ -35,6 +35,12 @@ function stop {
     log_end_msg $?
 }
 
+function reload {
+    log_daemon_msg "Reloading $NAME"
+    killproc -p $PIDFILE $DAEMON -HUP
+    log_end_msg $?
+}
+
 function status {
     status_of_proc -p $PIDFILE $DAEMON $NAME && exit 0 || exit $?
 }
@@ -53,12 +59,16 @@ case $1 in
         start
         ;;
 
+    reload)
+        reload
+        ;;
+
     status)
         status
         ;;
 
     *)
-        echo "Usage: $0 {start|stop|restart|status}"
+        echo "Usage: $0 {start|stop|restart|reload|status}"
         exit 2
         ;;
 esac

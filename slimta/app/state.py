@@ -29,10 +29,10 @@ import logging
 from importlib import import_module
 from functools import wraps
 from contextlib import contextmanager
-from weakref import WeakValueDictionary
 
 from config import Config, ConfigError, ConfigInputStream
 from gevent import sleep, socket
+from gevent.event import AsyncResult
 import slimta.system
 
 from .validation import ConfigValidation, ConfigValidationError
@@ -48,7 +48,9 @@ class SlimtaState(object):
         self.program = os.path.basename(sys.argv[0])
         self.args = args
         self.cfg = None
-        self.listeners = WeakValueDictionary()
+        self.loop_interrupt = AsyncResult()
+        self.cached_listeners = {}
+        self.listeners = {}
         self.edges = {}
         self.queues = {}
         self.relays = {}
@@ -64,15 +66,19 @@ class SlimtaState(object):
 
     @contextmanager
     def _with_sighandlers(self):
-        from signal import SIGTERM
+        from signal import SIGTERM, SIGHUP
         from gevent import signal
         def handle_term():
             sys.exit(0)
+        def handle_hup():
+            self.loop_interrupt.set('reload')
         old_term = signal(SIGTERM, handle_term)
+        old_hup = signal(SIGHUP, handle_hup)
         try:
             yield
         finally:
             signal(SIGTERM, old_term)
+            signal(SIGHUP, old_hup)
 
     def _try_configs(self, files):
         for config_file in files:
@@ -185,10 +191,22 @@ class SlimtaState(object):
         factory = self._import_symbol(options.factory)
         return factory(options, *extra)
 
+    def _copy_listener(self, listener):
+        if isinstance(listener, socket.socket):
+            fd = listener.fileno()
+            family = listener.family
+            type = listener.type
+            proto = listener.proto
+            return socket.fromfd(fd, family, type, proto)
+        return listener
+
     def _get_listener(self, options, defaults):
         key = hash(tuple(options.iteritems()))
-        if key in self.listeners:
-            return self.listeners[key]
+        if key in self.cached_listeners:
+            existing = self.cached_listeners[key]
+            listener_copy = self._copy_listener(existing)
+            self.listeners[key] = listener_copy
+            return listener_copy
         type = options.get('type', 'tcp')
         new_listener = None
         if type in ('tcp', 'udp', 'unix'):
@@ -385,7 +403,30 @@ class SlimtaState(object):
         self.edges[name] = new_edge
         return new_edge
 
+    def reload_config(self):
+        self.load_config()
+        old_edges = self.edges.copy()
+        old_queues = self.queues.copy()
+        old_relays = self.relays.copy()
+        self.edges = {}
+        self.queues = {}
+        self.relays = {}
+        self.start_everything()
+        for edge in old_edges.itervalues():
+            edge.kill()
+        for queue in old_queues.itervalues():
+            queue.kill()
+        for relay in old_relays.itervalues():
+            relay.kill()
+
+    def _handle_loop_interrupts(self, action):
+        if action == 'reload':
+            self.reload_config()
+
     def start_everything(self):
+        self.cached_listeners = self.listeners.copy()
+        self.listeners = {}
+
         if 'relay' in self.cfg:
             for name, options in dict(self.cfg.relay).items():
                 self._start_relay(name, options)
@@ -397,9 +438,9 @@ class SlimtaState(object):
             for name, options in dict(self.cfg.edge).items():
                 self._start_edge(name, options)
 
-    def loop(self):
-        from gevent.event import Event
+        self.cached_listeners = {}
 
+    def loop(self):
         self.start_everything()
 
         self.setup_logging()
@@ -411,7 +452,10 @@ class SlimtaState(object):
 
             try:
                 with self._with_sighandlers():
-                    Event().wait()
+                    while True:
+                        action = self.loop_interrupt.get()
+                        self.loop_interrupt = AsyncResult()
+                        self._handle_loop_interrupts(action)
             except (KeyboardInterrupt, SystemExit):
                 pass
 

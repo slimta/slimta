@@ -55,12 +55,4 @@ def main():
     state.loop()
 
 
-def worker_main():
-    argparser, args = parse_args()
-    state = SlimtaState(args)
-    state.load_config(argparser=argparser)
-
-    state.worker_loop()
-
-
 # vim:et:fdm=marker:sts=4:sw=4:ts=4

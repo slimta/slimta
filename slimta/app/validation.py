@@ -72,9 +72,6 @@ class ConfigValidation(object):
                 raise ConfigValidationError(msg, stack)
 
     def _check_process(self, opts, stack):
-        if stack[-1] not in ('slimta', 'worker'):
-            msg = "Unexpected process type '{0}'".format(stack[-1])
-            raise ConfigValidationError(msg, stack[:-1])
         keydict = {'daemon': (bool, False),
                    'pid_file': (basestring, False),
                    'user': (basestring, False),
@@ -163,8 +160,7 @@ class ConfigValidation(object):
         keydict = {'process': (Mapping, True),
                    'edge': (Mapping, False),
                    'relay': (Mapping, False),
-                   'queue': (Mapping, True),
-                   'celery_app': (Mapping, False)}
+                   'queue': (Mapping, True)}
         self._check_keys(self.cfg, keydict, stack)
 
         for process, opts in self.cfg.process.iteritems():

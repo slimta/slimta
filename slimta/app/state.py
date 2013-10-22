@@ -52,7 +52,6 @@ class SlimtaState(object):
         self.edges = {}
         self.queues = {}
         self.relays = {}
-        self._celery = None
 
     @contextmanager
     def _with_chdir(self, new_dir):
@@ -333,10 +332,6 @@ class SlimtaState(object):
         elif options.type == 'proxy':
             from slimta.queue.proxy import ProxyQueue
             new_queue = ProxyQueue(relay)
-        elif options.type == 'celery':
-            from slimta.celeryqueue import CeleryQueue
-            backoff = build_backoff_function(options.get('retry'))
-            new_queue = CeleryQueue(self.celery, relay, name, backoff=backoff)
         elif options.type == 'custom':
             new_queue = self._load_from_custom(options, relay)
         else:
@@ -344,18 +339,6 @@ class SlimtaState(object):
         add_queue_policies(new_queue, options.get('policies', []))
         self.queues[name] = new_queue
         return new_queue
-
-    @property
-    def celery(self):
-        from .celery import get_celery_app
-        if not self._celery:
-            self._celery = get_celery_app(self.cfg)
-        return self._celery
-
-    def start_celery_queues(self):
-        for name, options in dict(self.cfg.queue).items():
-            if options.type == 'celery':
-                self._start_queue(name, options)
 
     def _start_edge(self, name, options=None):
         if name in self.edges:
@@ -413,24 +396,6 @@ class SlimtaState(object):
         if 'edge' in self.cfg:
             for name, options in dict(self.cfg.edge).items():
                 self._start_edge(name, options)
-
-    def worker_loop(self):
-        from .celery import get_celery_worker
-
-        self.start_celery_queues()
-
-        self.setup_logging()
-        self.redirect_streams()
-        self.daemonize()
-        with slimta.system.PidFile(self.args.pid_file):
-            sleep(0.1)
-            self.drop_privileges()
-
-            try:
-                with self._with_sighandlers():
-                    get_celery_worker(self.celery).run()
-            except (KeyboardInterrupt, SystemExit):
-                pass
 
     def loop(self):
         from gevent.event import Event

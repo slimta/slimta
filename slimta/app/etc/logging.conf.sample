@@ -10,10 +10,6 @@ handlers: {
 }
 
 loggers: {
-  celery: {
-    level: WARNING
-    propagate: True
-  }
   slimta: {
     level: DEBUG
     propagate: True

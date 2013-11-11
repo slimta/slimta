@@ -347,6 +347,65 @@ class SlimtaState(object):
             backoff = build_backoff_function(options.get('retry'))
             new_queue = Queue(store, relay, backoff=backoff)
             new_queue.start()
+        elif options.type == 'rackspace':
+            from slimta.queue import Queue
+            from slimta.cloudstorage import CloudStorage
+            from slimta.cloudstorage.rackspace import RackspaceCloudAuth, \
+                    RackspaceCloudFiles, RackspaceCloudQueues
+            tls = self._get_tls_options(options.get('tls'))
+            credentials = {'username': options.username}
+            if 'password' in options:
+                credentials['password'] = options.password
+            if 'api_key' in options:
+                credentials['api_key'] = options.api_key
+            if 'tenant_id' in options:
+                credentials['tenant_id'] = options.tenant_id
+            auth_kwargs = {'region': options.get('region'),
+                           'timeout': 10.0,
+                           'tls': tls}
+            if 'endpoint' in options:
+                auth_kwargs['endpoint'] = options.endpoint
+            auth = RackspaceCloudAuth(credentials, **auth_kwargs)
+            cloud_files = RackspaceCloudFiles(auth,
+                    container=options.container_name,
+                    tls=tls, timeout=20.0)
+            cloud_queues = None
+            if 'queue_name' in options:
+                cloud_queues = RackspaceCloudQueues(auth,
+                        queue_name=options.queue_name,
+                        tls=tls, timeout=10.0)
+            store = CloudStorage(cloud_files, cloud_queues)
+            new_queue = Queue(store, relay, backoff=backoff)
+            new_queue.start()
+        elif options.type == 'aws':
+            from slimta.queue import Queue
+            from slimta.cloudstorage import CloudStorage
+            from slimta.cloudstorage.aws import SimpleStorageService, \
+                    SimpleQueueService
+            import boto
+            if 'access_key_id' in options:
+                from boto.s3.connection import S3Connection
+                s3_conn = S3Connection(options.access_key_id,
+                                       options.secret_access_key)
+            else:
+                s3_conn = boto.connect_s3()
+            s3_bucket = s3_conn.get_bucket(options.bucket_name)
+            s3 = SimpleStorageService(s3_bucket, timeout=20.0)
+            sqs = None
+            if 'queue_name' in options:
+                from boto.sqs import connect_to_region
+                region = options.get('queue_region', 'us-west-2')
+                if 'access_key_id' in options:
+                    sqs_conn = connect_to_region(region,
+                            aws_access_key_id=options.access_key_id,
+                            aws_secret_access_key=options.secret_access_key)
+                else:
+                    sqs_conn = connect_to_region(region)
+                sqs_queue = sqs_conn.create_queue(options.queue_name)
+                sqs = SimpleQueueService(sqs_queue, timeout=10.0)
+            store = CloudStorage(s3, sqs)
+            new_queue = Queue(store, relay, backoff=backoff)
+            new_queue.start()
         elif options.type == 'proxy':
             from slimta.queue.proxy import ProxyQueue
             new_queue = ProxyQueue(relay)

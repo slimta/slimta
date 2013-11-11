@@ -37,6 +37,7 @@ setup(name='slimta',
               'redisstorage': ['python-slimta-redisstorage'],
               'piperelay': ['python-slimta-piperelay'],
               'spf': ['python-slimta-spf'],
+              'cloudstorage': ['python-slimta-cloudstorage', 'boto'],
           },
       entry_points={'console_scripts': [
               'slimta = slimta.app.main:main',

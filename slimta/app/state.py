@@ -287,11 +287,11 @@ class SlimtaState(object):
             from slimta.relay.blackhole import BlackholeRelay
             new_relay = BlackholeRelay()
         elif options.type == 'maildrop':
-            from slimta.piperelay import MaildropRelay
+            from slimta.relay.pipe import MaildropRelay
             path = options.get('path')
             new_relay = MaildropRelay(path)
         elif options.type == 'dovecot':
-            from slimta.piperelay import DovecotRelay
+            from slimta.relay.pipe import DovecotRelay
             path = options.get('path')
             new_relay = DovecotRelay(path)
         elif options.type == 'custom':

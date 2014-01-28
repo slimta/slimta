@@ -23,7 +23,7 @@ from setuptools import setup, find_packages
 
 
 setup(name='slimta',
-      version='0.2.0',
+      version='0.2.1',
       author='Ian Good',
       author_email='icgood@gmail.com',
       description='Configurable MTA based on the python-slimta library.',
@@ -31,11 +31,11 @@ setup(name='slimta',
       url='http://slimta.org/',
       packages=find_packages(),
       namespace_packages=['slimta'],
-      install_requires=['python-slimta', 'config'],
+      install_requires=['python-slimta >= 0.3.21',
+                        'config'],
       extras_require={
               'diskstorage': ['python-slimta-diskstorage'],
               'redisstorage': ['python-slimta-redisstorage'],
-              'piperelay': ['python-slimta-piperelay'],
               'spf': ['python-slimta-spf'],
               'cloudstorage': ['python-slimta-cloudstorage', 'boto'],
           },

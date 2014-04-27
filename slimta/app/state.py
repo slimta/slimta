@@ -41,8 +41,8 @@ from .logging import setup_logging
 
 class SlimtaState(object):
 
-    _global_config_files = [os.path.expanduser('~/.slimta/slimta.conf'),
-                            '/etc/slimta/slimta.conf']
+    _global_config_files = [os.path.expanduser('~/.slimta/slimta.yaml'),
+                            '/etc/slimta/slimta.yaml']
 
     def __init__(self, args):
         self.program = os.path.basename(sys.argv[0])

@@ -49,9 +49,9 @@ def _try_config_copy(etc_dir, conf_file, force):
     from pkg_resources import resource_string
     resource_name = 'etc/{0}.sample'.format(conf_file)
     contents = resource_string('slimta.app', resource_name)
-    contents = contents.replace('slimta.conf.sample', 'slimta.conf')
-    contents = contents.replace('rules.conf.sample', 'rules.conf')
-    contents = contents.replace('logging.conf.sample', 'logging.conf')
+    contents = contents.replace('slimta.yaml.sample', 'slimta.yaml')
+    contents = contents.replace('rules.yaml.sample', 'rules.yaml')
+    contents = contents.replace('logging.yaml.sample', 'logging.yaml')
     with open(final_path, 'w') as f:
         f.write(contents)
 
@@ -72,9 +72,9 @@ def _setup_configs(args):
         if err != 17:
             raise
 
-    _try_config_copy(etc_dir, 'slimta.conf', args.force)
-    _try_config_copy(etc_dir, 'rules.conf', args.force)
-    _try_config_copy(etc_dir, 'logging.conf', args.force)
+    _try_config_copy(etc_dir, 'slimta.yaml', args.force)
+    _try_config_copy(etc_dir, 'rules.yaml', args.force)
+    _try_config_copy(etc_dir, 'logging.yaml', args.force)
 
 
 def _setup_inits(args):

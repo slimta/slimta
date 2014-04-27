@@ -27,9 +27,10 @@ from collections import Mapping, Sequence
 
 class ConfigValidationError(Exception):
 
-    def __init__(self, msg, stack):
-        final = msg + ' in config '+self._repr_stack(stack)
-        super(ConfigValidationError, self).__init__(final)
+    def __init__(self, msg, stack=None):
+        if stack:
+            msg += ' in config '+self._repr_stack(stack)
+        super(ConfigValidationError, self).__init__(msg)
 
     def _repr_stack(self, stack):
         ret = []

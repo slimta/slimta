@@ -22,7 +22,7 @@
 
 from __future__ import absolute_import
 
-from config import Mapping, Sequence
+from collections import Mapping, Sequence
 
 
 class ConfigValidationError(Exception):

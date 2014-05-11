@@ -30,12 +30,12 @@ from importlib import import_module
 from functools import wraps
 from contextlib import contextmanager
 
-import yaml
 from gevent import sleep, socket
 from gevent.event import AsyncResult
 import slimta.system
 
 from .validation import ConfigValidation, ConfigValidationError
+from .config import try_configs
 from .logging import setup_logging
 
 
@@ -56,15 +56,6 @@ class SlimtaState(object):
         self.relays = {}
 
     @contextmanager
-    def _with_chdir(self, new_dir):
-        old_dir = os.getcwd()
-        os.chdir(new_dir)
-        try:
-            yield old_dir
-        finally:
-            os.chdir(old_dir)
-
-    @contextmanager
     def _with_sighandlers(self):
         from signal import SIGTERM, SIGHUP
         from gevent import signal
@@ -80,27 +71,6 @@ class SlimtaState(object):
             signal(SIGTERM, old_term)
             signal(SIGHUP, old_hup)
 
-    def _load_yaml(self, filename):
-        class ConfigLoader(yaml.Loader):
-            pass
-        def yaml_include(loader, node):
-            inc_file = loader.construct_scalar(node) if loader else node
-            with open(inc_file, 'r') as inc_fobj:
-                return yaml.load(inc_fobj, ConfigLoader)
-        ConfigLoader.add_constructor('!include', yaml_include)
-        return yaml_include(None, filename)
-
-    def _try_configs(self, files):
-        for config_file in files:
-            config_file = os.path.expanduser(config_file)
-            config_dir = os.path.abspath(os.path.dirname(config_file))
-            config_base = os.path.basename(config_file)
-            if os.path.isdir(config_dir):
-                with self._with_chdir(config_dir):
-                    if os.path.exists(config_base):
-                        return self._load_yaml(config_base)
-        return None
-
     def load_config(self, argparser=None):
         if self.args.process_name:
             self.program = self.args.process_name
@@ -109,8 +79,7 @@ class SlimtaState(object):
         if self.args.config:
             files = [self.args.config]
 
-        self.cfg = self._try_configs(files)
-        print repr(self.cfg)
+        self.cfg = try_configs(files)
         err = None
         if self.cfg:
             try:

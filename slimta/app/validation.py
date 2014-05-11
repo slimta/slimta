@@ -47,12 +47,8 @@ class ConfigValidation(object):
     def __init__(self, cfg):
         self.cfg = cfg
 
-    def _check_ref(self, path, name):
-        try:
-            resolved_path = self.cfg.getByPath(path)
-            return name in resolved_path
-        except AttributeError:
-            return False
+    def _check_ref(self, section, name):
+        return name in self.cfg[section]
 
     def _check_keys(self, opts, keydict, stack, only_keys=False):
         for k, v in opts.iteritems():

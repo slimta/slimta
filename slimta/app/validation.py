@@ -158,6 +158,10 @@ class ConfigValidation(object):
                              stack+['credentials'], True)
 
     def _check_toplevel(self, stack, program):
+        if not isinstance(self.cfg, Mapping):
+            msg = 'Expected mapping'
+            raise ConfigValidationError(msg, stack)
+
         keydict = {'process': (Mapping, True),
                    'edge': (Mapping, False),
                    'relay': (Mapping, False),

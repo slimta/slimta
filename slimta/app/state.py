@@ -82,16 +82,9 @@ class SlimtaState(object):
 
     def _load_yaml(self, filename):
         class ConfigLoader(yaml.Loader):
-            def construct_mapping(self, node):
-                ret = super(ConfigLoader, self).construct_mapping(node)
-                from pprint import pprint
-                pprint(ret)
-                return ret
+            pass
         def yaml_include(loader, node):
-            if loader:
-                inc_file = loader.construct_scalar(node)
-            else:
-                inc_file = node
+            inc_file = loader.construct_scalar(node) if loader else node
             with open(inc_file, 'r') as inc_fobj:
                 return yaml.load(inc_fobj, ConfigLoader)
         ConfigLoader.add_constructor('!include', yaml_include)
@@ -117,6 +110,7 @@ class SlimtaState(object):
             files = [self.args.config]
 
         self.cfg = self._try_configs(files)
+        print repr(self.cfg)
         err = None
         if self.cfg:
             try:

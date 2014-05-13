@@ -59,7 +59,7 @@ be: actually sending and receiving email to the Internet. Please check out the
 including more advanced and custom setups.
 
 [1]: http://slimta.org/
-[2]: http://docs.slimta.org/latest/manual/slimta.html
+[2]: http://slimta.org/latest/manual/slimta.html
 [3]: http://opensource.org/licenses/MIT
 [4]: https://pypi.python.org/pypi/slimta/
 

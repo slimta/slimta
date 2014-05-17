@@ -30,19 +30,19 @@ from importlib import import_module
 from functools import wraps
 from contextlib import contextmanager
 
-from config import Config, ConfigError, ConfigInputStream
 from gevent import sleep, socket
 from gevent.event import AsyncResult
 import slimta.system
 
 from .validation import ConfigValidation, ConfigValidationError
+from .config import try_configs
 from .logging import setup_logging
 
 
 class SlimtaState(object):
 
-    _global_config_files = [os.path.expanduser('~/.slimta/slimta.conf'),
-                            '/etc/slimta/slimta.conf']
+    _global_config_files = [os.path.expanduser('~/.slimta/slimta.yaml'),
+                            '/etc/slimta/slimta.yaml']
 
     def __init__(self, args):
         self.program = os.path.basename(sys.argv[0])
@@ -54,15 +54,6 @@ class SlimtaState(object):
         self.edges = {}
         self.queues = {}
         self.relays = {}
-
-    @contextmanager
-    def _with_chdir(self, new_dir):
-        old_dir = os.getcwd()
-        os.chdir(new_dir)
-        try:
-            yield old_dir
-        finally:
-            os.chdir(old_dir)
 
     @contextmanager
     def _with_sighandlers(self):
@@ -80,17 +71,6 @@ class SlimtaState(object):
             signal(SIGTERM, old_term)
             signal(SIGHUP, old_hup)
 
-    def _try_configs(self, files):
-        for config_file in files:
-            config_file = os.path.expanduser(config_file)
-            config_dir = os.path.abspath(os.path.dirname(config_file))
-            config_base = os.path.basename(config_file)
-            if os.path.isdir(config_dir):
-                with self._with_chdir(config_dir):
-                    if os.path.exists(config_base):
-                        return Config(config_base), config_file
-        return None, None
-
     def load_config(self, argparser=None):
         if self.args.process_name:
             self.program = self.args.process_name
@@ -99,7 +79,7 @@ class SlimtaState(object):
         if self.args.config:
             files = [self.args.config]
 
-        self.cfg, config_file = self._try_configs(files)
+        self.cfg = try_configs(files)
         err = None
         if self.cfg:
             try:
@@ -213,7 +193,8 @@ class SlimtaState(object):
             if type == 'tcp':
                 interface = options.get('interface', defaults.get('interface'))
                 port = int(options.get('port', defaults.get('port')))
-                new_listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                new_listener = socket.socket(socket.AF_INET,
+                                             socket.SOCK_STREAM)
                 address = (interface, port)
             elif type == 'udp':
                 interface = options.get('interface', defaults.get('interface'))
@@ -221,7 +202,8 @@ class SlimtaState(object):
                 new_listener = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                 address = (interface, port)
             elif type == 'unix':
-                new_listener = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+                new_listener = socket.socket(socket.AF_UNIX,
+                                             socket.SOCK_STREAM)
                 address = options.get('path', defaults.get('path'))
             new_listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             new_listener.setblocking(0)
@@ -297,7 +279,8 @@ class SlimtaState(object):
         elif options.type == 'custom':
             new_relay = self._load_from_custom(options)
         else:
-            raise ConfigError('relay type does not exist: '+options.type)
+            msg = 'relay type does not exist: '+options.type
+            raise ConfigValidationError(msg)
         self.relays[name] = new_relay
         return new_relay
 
@@ -412,7 +395,8 @@ class SlimtaState(object):
         elif options.type == 'custom':
             new_queue = self._load_from_custom(options, relay)
         else:
-            raise ConfigError('queue type does not exist: '+options.type)
+            msg = 'queue type does not exist: '+options.type
+            raise ConfigValidationError()
         add_queue_policies(new_queue, options.get('policies', []))
         self.queues[name] = new_queue
         return new_queue
@@ -429,6 +413,7 @@ class SlimtaState(object):
             from slimta.edge.smtp import SmtpEdge
             from .helpers import build_smtpedge_validators, build_smtpedge_auth
             from .helpers import fill_hostname_template
+            hostname = fill_hostname_template(options.get('hostname'))
             listener_defaults = {'interface': '127.0.0.1', 'port': 25}
             listener = self._get_listener(options.listener, listener_defaults)
             kwargs = {}
@@ -439,7 +424,7 @@ class SlimtaState(object):
             kwargs['command_timeout'] = 20.0
             kwargs['data_timeout'] = 30.0
             kwargs['max_size'] = int(options.get('max_size', 10485760))
-            kwargs['hostname'] = fill_hostname_template(options.get('hostname'))
+            kwargs['hostname'] = hostname
             new_edge = SmtpEdge(listener, queue, **kwargs)
             new_edge.start()
         elif options.type == 'http':
@@ -458,7 +443,8 @@ class SlimtaState(object):
         elif options.type == 'custom':
             new_edge = self._load_from_custom(options, queue)
         else:
-            raise ConfigError('edge type does not exist: '+options.type)
+            msg = 'edge type does not exist: '+options.type
+            raise ConfigValidationError(msg)
         self.edges[name] = new_edge
         return new_edge
 

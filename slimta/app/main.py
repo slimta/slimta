@@ -33,7 +33,7 @@ def parse_args():
     argparser = ArgumentParser(description='Configurable MTA based on the python-slimta libraries.')
     argparser.add_argument('--version', action='version', version='%(prog)s '+__version__)
     argparser.add_argument('-c', '--config', metavar='FILE', default=None,
-                    help='Specifies a configuration file to read. If not given, the default locations ($HOME/.slimta/slimta.conf, /etc/slimta/slimta.conf) are checked.')
+                    help='Specifies a configuration file to read. If not given, the default locations ($HOME/.slimta/slimta.yaml, /etc/slimta/slimta.yaml) are checked.')
     argparser.add_argument('-n', '--process-name', metavar='NAME', default=None,
                     help='Use the process sub-section NAME for configuration. By default, the name of the executable is used.')
     argparser.add_argument('-a', '--no-daemon', dest='attached', action='store_true',

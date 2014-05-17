@@ -22,14 +22,15 @@
 
 from __future__ import absolute_import
 
-from config import Mapping, Sequence
+from collections import Mapping, Sequence
 
 
 class ConfigValidationError(Exception):
 
-    def __init__(self, msg, stack):
-        final = msg + ' in config '+self._repr_stack(stack)
-        super(ConfigValidationError, self).__init__(final)
+    def __init__(self, msg, stack=None):
+        if stack:
+            msg += ' in config '+self._repr_stack(stack)
+        super(ConfigValidationError, self).__init__(msg)
 
     def _repr_stack(self, stack):
         ret = []
@@ -46,12 +47,8 @@ class ConfigValidation(object):
     def __init__(self, cfg):
         self.cfg = cfg
 
-    def _check_ref(self, path, name):
-        try:
-            resolved_path = self.cfg.getByPath(path)
-            return name in resolved_path
-        except AttributeError:
-            return False
+    def _check_ref(self, section, name):
+        return name in self.cfg[section]
 
     def _check_keys(self, opts, keydict, stack, only_keys=False):
         for k, v in opts.iteritems():
@@ -157,6 +154,10 @@ class ConfigValidation(object):
                              stack+['credentials'], True)
 
     def _check_toplevel(self, stack, program):
+        if not isinstance(self.cfg, Mapping):
+            msg = 'Expected mapping'
+            raise ConfigValidationError(msg, stack)
+
         keydict = {'process': (Mapping, True),
                    'edge': (Mapping, False),
                    'relay': (Mapping, False),

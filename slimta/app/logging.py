@@ -25,27 +25,10 @@ import sys
 import logging
 import logging.config
 
-from config import Mapping, Sequence
-
-
-def _flatten(val):
-    if isinstance(val, Mapping):
-        new_dict = {}
-        for k, v in val.iteritems():
-            new_dict[k] = _flatten(v)
-        return new_dict
-    elif isinstance(val, Sequence):
-        new_list = []
-        for v in val:
-            new_list.append(_flatten(v))
-        return new_list
-    else:
-        return val
-
 
 def setup_logging(settings):
     if settings:
-        logging.config.dictConfig(_flatten(settings))
+        logging.config.dictConfig(settings)
     else:
         logging.basicConfig(level=logging.DEBUG, stream=sys.stdout)
 

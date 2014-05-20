@@ -28,7 +28,7 @@ from slimta.edge.smtp import SmtpValidators
 from slimta.edge.wsgi import WsgiValidators, WsgiResponse
 from slimta.smtp.auth import Auth, CredentialsInvalidError
 from slimta.util import build_auth_from_dict
-from slimta.util.dnsbl import check_dnsbl
+from slimta.util.dnsbl import check_dnsbl, DnsBlocklistGroup
 
 from slimta.policy.forward import Forward
 from slimta.policy.split import RecipientSplit, RecipientDomainSplit
@@ -84,7 +84,13 @@ class RuleHelpers(object):
 
     def get_banner_decorator(self):
         if self.dnsbl:
-            return check_dnsbl(self.dnsbl, match_code='520')
+            if isinstance(self.dnsbl, list):
+                blgroup = DnsBlocklistGroup()
+                for bl in self.dnsbl:
+                    blgroup.add_dnsbl(bl)
+                return check_dnsbl(blgroup, match_code='520')
+            else:
+                return check_dnsbl(self.dnsbl, match_code='520')
         return self._noop_decorator
 
     def get_mail_decorator(self):

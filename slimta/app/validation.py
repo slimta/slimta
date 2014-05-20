@@ -107,6 +107,7 @@ class ConfigValidation(object):
         if 'rules' in opts:
             rules_keydict = {'banner': (basestring, False),
                              'dnsbl': (basestring, False),
+                             'dnsbl': (Sequence, False),
                              'reject_spf': (Sequence, False),
                              'only_senders': (Sequence, False),
                              'only_recipients': (Sequence, False),

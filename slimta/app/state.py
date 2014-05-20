@@ -273,9 +273,9 @@ class SlimtaState(object):
             path = options.get('path')
             new_relay = MaildropRelay(path)
         elif options.type == 'dovecot':
-            from slimta.relay.pipe import DovecotRelay
+            from slimta.relay.pipe import DovecotLdaRelay
             path = options.get('path')
-            new_relay = DovecotRelay(path)
+            new_relay = DovecotLdaRelay(path)
         elif options.type == 'custom':
             new_relay = self._load_from_custom(options)
         else:

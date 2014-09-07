@@ -78,6 +78,10 @@ class ConfigValidation(object):
                    'logging': (Mapping, False)}
         self._check_keys(opts, keydict, stack, True)
 
+    def _check_lookup(self, opts, stack):
+        keydict = {'type': (basestring, True)}
+        self._check_keys(opts, keydict, stack)
+
     def _check_edge(self, opts, stack):
         keydict = {'type': (basestring, True),
                    'queue': (basestring, True),
@@ -109,11 +113,20 @@ class ConfigValidation(object):
                              'dnsbl': (basestring, False),
                              'dnsbl': (Sequence, False),
                              'reject_spf': (Sequence, False),
-                             'only_senders': (Sequence, False),
-                             'only_recipients': (Sequence, False),
-                             'require_credentials': (Mapping, False),
+                             'lookup_senders': (Mapping, False),
+                             'lookup_recipients': (Mapping, False),
+                             'lookup_credentials': (Mapping, False),
                              'reject_spam': (Mapping, False)}
             self._check_keys(opts.rules, rules_keydict, stack+['rules'], True)
+            if 'lookup_sender' in opts.rules:
+                self._check_lookup(opts.rules.lookup_sender,
+                                   stack+['lookup_sender'])
+            if 'lookup_recipients' in opts.rules:
+                self._check_lookup(opts.rules.lookup_recipients,
+                                   stack+['lookup_recipients'])
+            if 'lookup_credentials' in opts.rules:
+                self._check_lookup(opts.rules.lookup_credentials,
+                                   stack+['lookup_credentials'])
 
     def _check_queue(self, opts, stack):
         keydict = {'type': (basestring, True),

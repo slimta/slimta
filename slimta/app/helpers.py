@@ -36,6 +36,8 @@ from slimta.policy.spamassassin import SpamAssassin
 from slimta.policy.headers import AddDateHeader, AddMessageIdHeader, \
                                   AddReceivedHeader
 
+from .lookup import load_lookup
+
 
 def _get_spamassassin_object(options):
     host = options.get('host', 'localhost')
@@ -56,9 +58,9 @@ class RuleHelpers(object):
         rules = options.get('rules', {})
         self.banner = fill_hostname_template(rules.get('banner'))
         self.dnsbl = rules.get('dnsbl')
-        self.only_senders = rules.get('only_senders')
-        self.only_rcpts = rules.get('only_recipients')
-        self.credentials = rules.get('require_credentials')
+        self.lookup_senders = load_lookup(rules.get('lookup_senders'))
+        self.lookup_rcpts = load_lookup(rules.get('lookup_recipients'))
+        self.lookup_creds = load_lookup(rules.get('lookup_credentials'))
         self.reject_spf = rules.get('reject_spf')
         self.scanner = self._get_scanner(rules.get('reject_spam'))
 
@@ -71,15 +73,21 @@ class RuleHelpers(object):
         return None
 
     def is_sender_ok(self, validators, sender):
-        if self.only_senders is not None and sender not in self.only_senders:
-            return False
-        if self.credentials is not None and not validators.session.auth_result:
+        if self.lookup_senders:
+            values = {'address': sender}
+            if '@' in sender:
+                values['domain'] = sender.rsplit('@', 1)[1]
+            return self.lookup_senders.lookup(**values)
+        if self.lookup_creds and not validators.session.auth_result:
             return False
         return True
 
     def is_recipient_ok(self, recipient):
-        if self.only_rcpts is not None and recipient not in self.only_rcpts:
-            return False
+        if self.lookup_rcpts:
+            values = {'address': recipient}
+            if '@' in recipient:
+                values['domain'] = recipient.rsplit('@', 1)[1]
+            return self.lookup_rcpts.lookup(**values)
         return True
 
     def get_banner_decorator(self):

@@ -21,8 +21,8 @@
 
 from __future__ import absolute_import
 
-from slimta.lookup.redis import RedisLookup
-from slimta.lookup.dbapi2 import SQLite3Lookup
+from slimta.lookup.drivers.redis import RedisLookup
+from slimta.lookup.drivers.dbapi2 import SQLite3Lookup
 from .validation import ConfigValidationError
 
 

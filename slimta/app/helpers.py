@@ -26,8 +26,8 @@ from socket import getfqdn, gethostname
 
 from slimta.edge.smtp import SmtpValidators
 from slimta.edge.wsgi import WsgiValidators, WsgiResponse
-from slimta.smtp.auth import Auth, CredentialsInvalidError
 from slimta.util.dnsbl import check_dnsbl, DnsBlocklistGroup
+from slimta.lookup.auth import LookupAuth
 
 from slimta.policy.forward import Forward
 from slimta.policy.split import RecipientSplit, RecipientDomainSplit
@@ -142,7 +142,7 @@ def build_smtpedge_auth(options):
     rules = RuleHelpers(options)
     if rules.lookup_creds is None:
         return None
-    # XXX
+    return LookupAuth(rules.lookup_creds)
 
 
 def build_wsgiedge_validators(options):

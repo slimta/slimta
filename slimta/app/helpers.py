@@ -27,7 +27,6 @@ from socket import getfqdn, gethostname
 from slimta.edge.smtp import SmtpValidators
 from slimta.edge.wsgi import WsgiValidators, WsgiResponse
 from slimta.smtp.auth import Auth, CredentialsInvalidError
-from slimta.util import build_auth_from_dict
 from slimta.util.dnsbl import check_dnsbl, DnsBlocklistGroup
 
 from slimta.policy.forward import Forward
@@ -74,20 +73,14 @@ class RuleHelpers(object):
 
     def is_sender_ok(self, validators, sender):
         if self.lookup_senders:
-            values = {'address': sender}
-            if '@' in sender:
-                values['domain'] = sender.rsplit('@', 1)[1]
-            return self.lookup_senders.lookup(**values)
+            return self.lookup_senders.lookup_address(sender)
         if self.lookup_creds and not validators.session.auth_result:
             return False
         return True
 
     def is_recipient_ok(self, recipient):
         if self.lookup_rcpts:
-            values = {'address': recipient}
-            if '@' in recipient:
-                values['domain'] = recipient.rsplit('@', 1)[1]
-            return self.lookup_rcpts.lookup(**values)
+            return self.lookup_rcpts.lookup_address(recipient)
         return True
 
     def get_banner_decorator(self):
@@ -147,9 +140,9 @@ def build_smtpedge_validators(options):
 
 def build_smtpedge_auth(options):
     rules = RuleHelpers(options)
-    if rules.credentials is None:
+    if rules.lookup_creds is None:
         return None
-    return build_auth_from_dict(rules.credentials)
+    # XXX
 
 
 def build_wsgiedge_validators(options):

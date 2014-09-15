@@ -32,6 +32,7 @@ setup(name='slimta',
       packages=find_packages(),
       namespace_packages=['slimta'],
       install_requires=['python-slimta >= 1.0.2',
+                        'python-slimta-lookup',
                         'PyYAML'],
       extras_require={
               'diskstorage': ['python-slimta-diskstorage'],

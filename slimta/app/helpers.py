@@ -28,6 +28,7 @@ from slimta.edge.smtp import SmtpValidators
 from slimta.edge.wsgi import WsgiValidators, WsgiResponse
 from slimta.util.dnsbl import check_dnsbl, DnsBlocklistGroup
 from slimta.lookup.auth import LookupAuth
+from slimta.lookup.policy import LookupPolicy
 
 from slimta.policy.forward import Forward
 from slimta.policy.split import RecipientSplit, RecipientDomainSplit
@@ -36,6 +37,7 @@ from slimta.policy.headers import AddDateHeader, AddMessageIdHeader, \
                                   AddReceivedHeader
 
 from .lookup import load_lookup
+from .validation import ConfigValidationError
 
 
 def _get_spamassassin_object(options):
@@ -176,6 +178,17 @@ def add_queue_policies(queue, policy_options):
             queue.add_policy(RecipientSplit())
         elif policy.type == 'recipient_domain_split':
             queue.add_policy(RecipientDomainSplit())
+        elif policy.type == 'lookup':
+            lookup = load_lookup(policy.get('lookup', {}))
+            on_sender = policy.get('on_sender', False)
+            on_rcpts = policy.get('on_recipients', True)
+            if lookup:
+                lookup_policy = LookupPolicy(lookup, on_sender=on_sender,
+                                             on_rcpts=on_rcpts)
+                queue.add_policy(lookup_policy)
+            else:
+                msg = 'Incomplete lookup policy section'
+                raise ConfigValidationError(msg)
         elif policy.type == 'forward':
             forward = Forward()
             for pattern, repl in dict(policy.get('mapping', {})).items():

@@ -23,7 +23,7 @@ from setuptools import setup, find_packages
 
 
 setup(name='slimta',
-      version='0.3.1',
+      version='0.4.0',
       author='Ian Good',
       author_email='icgood@gmail.com',
       description='Configurable MTA based on the python-slimta library.',
@@ -31,7 +31,7 @@ setup(name='slimta',
       url='http://slimta.org/',
       packages=find_packages(),
       namespace_packages=['slimta'],
-      install_requires=['python-slimta >= 0.3.21',
+      install_requires=['python-slimta >= 1.0.2',
                         'PyYAML'],
       extras_require={
               'diskstorage': ['python-slimta-diskstorage'],

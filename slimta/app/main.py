@@ -21,8 +21,10 @@
 
 from __future__ import absolute_import
 
+import os
 from argparse import ArgumentParser
 
+os.environ['GEVENT_RESOLVER'] = 'ares'
 from gevent import monkey; monkey.patch_all()
 
 from . import __version__

@@ -420,7 +420,7 @@ class SlimtaState(object):
             kwargs['tls'] = self._get_tls_options(options.get('tls'))
             kwargs['tls_immediately'] = options.get('tls_immediately', False)
             kwargs['validator_class'] = build_smtpedge_validators(options)
-            kwargs['auth_class'] = build_smtpedge_auth(options)
+            kwargs['auth_obj'] = build_smtpedge_auth(options)
             kwargs['command_timeout'] = 20.0
             kwargs['data_timeout'] = 30.0
             kwargs['max_size'] = int(options.get('max_size', 10485760))

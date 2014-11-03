@@ -255,6 +255,24 @@ class SlimtaState(object):
                 credentials = get_relay_credentials(options.get('credentials'))
                 kwargs['credentials'] = credentials
             new_relay = StaticSmtpRelay(**kwargs)
+        elif options.type == 'lmtp':
+            from slimta.relay.smtp.static import StaticLmtpRelay
+            from .helpers import fill_hostname_template, get_relay_credentials
+            kwargs = {}
+            kwargs['host'] = options.host
+            kwargs['port'] = options.get('port', 24)
+            kwargs['connect_timeout'] = options.get('connect_timeout', 30)
+            kwargs['command_timeout'] = options.get('command_timeout', 30)
+            kwargs['data_timeout'] = options.get('data_timeout', 60)
+            kwargs['idle_timeout'] = options.get('idle_timeout', 10)
+            kwargs['pool_size'] = options.get('concurrent_connections', 5)
+            kwargs['ehlo_as'] = fill_hostname_template(options.get('lhlo_as'))
+            if 'tls' in options:
+                kwargs['tls'] = self._get_tls_options(options.tls)
+            if 'credentials' in options:
+                credentials = get_relay_credentials(options.get('credentials'))
+                kwargs['credentials'] = credentials
+            new_relay = StaticLmtpRelay(**kwargs)
         elif options.type == 'http':
             from slimta.relay.http import HttpRelay
             from .helpers import fill_hostname_template

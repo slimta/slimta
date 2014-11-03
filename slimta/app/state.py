@@ -259,7 +259,7 @@ class SlimtaState(object):
             from slimta.relay.smtp.static import StaticLmtpRelay
             from .helpers import fill_hostname_template, get_relay_credentials
             kwargs = {}
-            kwargs['host'] = options.host
+            kwargs['host'] = options.get('host', 'localhost')
             kwargs['port'] = options.get('port', 24)
             kwargs['connect_timeout'] = options.get('connect_timeout', 30)
             kwargs['command_timeout'] = options.get('command_timeout', 30)

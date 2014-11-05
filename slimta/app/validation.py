@@ -132,10 +132,16 @@ class ConfigValidation(object):
         keydict = {'type': (basestring, True),
                    'relay': (basestring, False),
                    'factory': (basestring, False),
+                   'bounce_queue': (basestring, False),
+                   'retry': (Mapping, False),
                    'policies': (Sequence, False)}
         self._check_keys(opts, keydict, stack)
         if 'relay' in opts and not self._check_ref('relay', opts.relay):
             msg = "No match for reference key 'relay'"
+            raise ConfigValidationError(msg, stack)
+        if 'bounce_queue' in opts and not self._check_ref('queue',
+                                                          opts.bounce_queue):
+            msg = "No match for reference key 'bounce_queue'"
             raise ConfigValidationError(msg, stack)
         if opts.type == 'custom' and not opts.get('factory'):
             msg = "The 'factory' key must be given when using 'custom' type"

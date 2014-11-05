@@ -311,12 +311,16 @@ class SlimtaState(object):
         new_queue = None
         relay_name = options.get('relay')
         relay = self._start_relay(relay_name) if relay_name else None
+        bounce_queue_name = options.get('bounce_queue', name)
+        bounce_queue = self._start_queue(bounce_queue_name) \
+                       if bounce_queue_name != name else None
         if options.type == 'memory':
             from slimta.queue import Queue
             from slimta.queue.dict import DictStorage
             store = DictStorage()
             backoff = build_backoff_function(options.get('retry'))
-            new_queue = Queue(store, relay, backoff=backoff)
+            new_queue = Queue(store, relay, backoff=backoff,
+                              bounce_queue=bounce_queue)
             new_queue.start()
         elif options.type == 'disk':
             from slimta.queue import Queue
@@ -326,7 +330,8 @@ class SlimtaState(object):
             tmp_dir = options.get('tmp_dir')
             store = DiskStorage(env_dir, meta_dir, tmp_dir)
             backoff = build_backoff_function(options.get('retry'))
-            new_queue = Queue(store, relay, backoff=backoff)
+            new_queue = Queue(store, relay, backoff=backoff,
+                              bounce_queue=bounce_queue)
             new_queue.start()
         elif options.type == 'redis':
             from slimta.queue import Queue
@@ -346,7 +351,8 @@ class SlimtaState(object):
                 kwargs['prefix'] = options.prefix
             store = RedisStorage(**kwargs)
             backoff = build_backoff_function(options.get('retry'))
-            new_queue = Queue(store, relay, backoff=backoff)
+            new_queue = Queue(store, relay, backoff=backoff,
+                              bounce_queue=bounce_queue)
             new_queue.start()
         elif options.type == 'rackspace':
             from slimta.queue import Queue
@@ -376,7 +382,8 @@ class SlimtaState(object):
                         queue_name=options.queue_name,
                         tls=tls, timeout=10.0)
             store = CloudStorage(cloud_files, cloud_queues)
-            new_queue = Queue(store, relay, backoff=backoff)
+            new_queue = Queue(store, relay, backoff=backoff,
+                              bounce_queue=bounce_queue)
             new_queue.start()
         elif options.type == 'aws':
             from slimta.queue import Queue
@@ -405,7 +412,8 @@ class SlimtaState(object):
                 sqs_queue = sqs_conn.create_queue(options.queue_name)
                 sqs = SimpleQueueService(sqs_queue, timeout=10.0)
             store = CloudStorage(s3, sqs)
-            new_queue = Queue(store, relay, backoff=backoff)
+            new_queue = Queue(store, relay, backoff=backoff,
+                              bounce_queue=bounce_queue)
             new_queue.start()
         elif options.type == 'proxy':
             from slimta.queue.proxy import ProxyQueue

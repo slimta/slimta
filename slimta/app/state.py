@@ -266,7 +266,7 @@ class SlimtaState(object):
             kwargs['data_timeout'] = options.get('data_timeout', 60)
             kwargs['idle_timeout'] = options.get('idle_timeout', 10)
             kwargs['pool_size'] = options.get('concurrent_connections', 5)
-            kwargs['ehlo_as'] = fill_hostname_template(options.get('lhlo_as'))
+            kwargs['ehlo_as'] = fill_hostname_template(options.get('ehlo_as'))
             if 'tls' in options:
                 kwargs['tls'] = self._get_tls_options(options.tls)
             if 'credentials' in options:

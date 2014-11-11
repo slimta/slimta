@@ -29,7 +29,7 @@ configuration files:
 This creates 3 files, in `~/.slimta/` or wherever you specified. The sample
 configs are designed to work out of the box, so lets give it a shot:
 
-    $ slimta
+    $ slimta --no-daemon
 
 In another terminal, let's connect to port 1025 to see if it's working. After
 the banner (the line beginning with `220 `), type in `QUIT` to end the session:
@@ -62,4 +62,3 @@ including more advanced and custom setups.
 [2]: http://slimta.org/latest/manual/slimta.html
 [3]: http://opensource.org/licenses/MIT
 [4]: https://pypi.python.org/pypi/slimta/
-

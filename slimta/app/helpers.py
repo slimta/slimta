@@ -75,14 +75,14 @@ class RuleHelpers(object):
 
     def is_sender_ok(self, validators, sender):
         if self.lookup_senders:
-            return self.lookup_senders.lookup_address(sender)
+            return self.lookup_senders.lookup_address(sender) is not None
         if self.lookup_creds and not validators.session.auth_result:
             return False
         return True
 
     def is_recipient_ok(self, recipient):
         if self.lookup_rcpts:
-            return self.lookup_rcpts.lookup_address(recipient)
+            return self.lookup_rcpts.lookup_address(recipient) is not None
         return True
 
     def get_banner_decorator(self):

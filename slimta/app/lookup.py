@@ -21,12 +21,13 @@
 
 from __future__ import absolute_import
 
-from slimta.lookup.drivers.redis import RedisLookup
-from slimta.lookup.drivers.dbapi2 import SQLite3Lookup
+from collections import Mapping
+
 from .validation import ConfigValidationError
 
 
 def _load_redis_lookup(options):
+    from slimta.lookup.drivers.redis import RedisLookup
     if 'key_template' not in options:
         msg = 'redis lookup requires key_template option'
         raise ConfigValidationError(msg)
@@ -47,11 +48,24 @@ def _load_redis_lookup(options):
 
 
 def _load_sqlite3_lookup(options):
+    from slimta.lookup.drivers.dbapi2 import SQLite3Lookup
     for opt in ['database', 'query']:
         if opt not in options:
             msg = 'sqlite3 lookup requires {0} option'.format(opt)
             raise ConfigValidationError(msg)
     return SQLite3Lookup(opt.database, opt.query)
+
+
+def _load_dict_lookup(options):
+    from slimta.lookup.drivers.dict import DictLookup
+    if 'map' not in options:
+        msg = 'config lookup requires map section'
+        raise ConfigValidationError(msg)
+    key_template = options.get('key_template', '{address}')
+    map = options.map
+    if not isinstance(map, Mapping):
+        map = dict.fromkeys(map, {})
+    return DictLookup(map, key_template)
 
 
 def load_lookup(options):
@@ -61,6 +75,8 @@ def load_lookup(options):
         return _load_redis_lookup(options)
     elif options.type == 'sqlite3':
         return _load_sqlite3_lookup(options)
+    elif options.type == 'config':
+        return _load_dict_lookup(options)
     else:
         msg = 'lookup type does not exist: '+options.type
         raise ConfigValidationError(msg)

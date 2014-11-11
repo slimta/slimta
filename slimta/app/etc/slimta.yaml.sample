@@ -14,10 +14,11 @@ edge:
     rules: 
       banner: '{fqdn} ESMTP example.com Mail Delivery Agent'
       dnsbl: zen.spamhaus.org
-      only_recipients:
-        - postmaster@example.com
-        - abuse@example.com
-
+      lookup_recipients:
+        type: config
+        map:
+          - postmaster@example.com
+          - abuse@example.com
   outbound:
     type: smtp
     queue: outbound
@@ -27,8 +28,10 @@ edge:
     rules:
       banner: '{fqdn} ESMTP example.com Mail Submission Agent'
       dnsbl: zen.spamhaus.org
-      require_credentials:
-        user@example.com: xxxxxxxx
+      lookup_credentials:
+        type: config
+        map:
+          user@example.com: {password: 'abcd1234'}
 
 queue:
   inbound:
@@ -38,7 +41,6 @@ queue:
       - {type: add_date_header}
       - {type: add_messageid_header}
       - {type: add_received_header}
-
   outbound:
     type: memory
     relay: outbound

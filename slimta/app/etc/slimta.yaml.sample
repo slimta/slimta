@@ -14,11 +14,9 @@ edge:
     rules: 
       banner: '{fqdn} ESMTP example.com Mail Delivery Agent'
       dnsbl: zen.spamhaus.org
-      lookup_recipients:
-        type: config
-        map:
-          - postmaster@example.com
-          - abuse@example.com
+      only_recipients:
+        - postmaster@example.com
+        - abuse@example.com
   outbound:
     type: smtp
     queue: outbound

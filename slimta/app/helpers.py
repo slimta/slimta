@@ -27,6 +27,7 @@ from socket import getfqdn, gethostname
 from slimta.edge.smtp import SmtpValidators
 from slimta.edge.wsgi import WsgiValidators, WsgiResponse
 from slimta.util.dnsbl import check_dnsbl, DnsBlocklistGroup
+from slimta.lookup.drivers.dict import DictLookup
 from slimta.lookup.auth import LookupAuth
 from slimta.lookup.policy import LookupPolicy
 
@@ -59,11 +60,20 @@ class RuleHelpers(object):
         rules = options.get('rules', {})
         self.banner = fill_hostname_template(rules.get('banner'))
         self.dnsbl = rules.get('dnsbl')
-        self.lookup_senders = load_lookup(rules.get('lookup_senders'))
-        self.lookup_rcpts = load_lookup(rules.get('lookup_recipients'))
+        self.lookup_senders = self._get_lookup(rules, 'lookup_senders',
+                                               'only_senders')
+        self.lookup_rcpts = self._get_lookup(rules, 'lookup_recipients',
+                                             'only_recipients')
         self.lookup_creds = load_lookup(rules.get('lookup_credentials'))
         self.reject_spf = rules.get('reject_spf')
         self.scanner = self._get_scanner(rules.get('reject_spam'))
+
+    def _get_lookup(self, rules, lookup_section, list_section):
+        if lookup_section in rules:
+            return load_lookup(rules[lookup_section])
+        elif list_section in rules:
+            map = dict.fromkeys(rules[list_section], {})
+            return DictLookup(map, '{address}')
 
     def _get_scanner(self, options):
         if options is None:

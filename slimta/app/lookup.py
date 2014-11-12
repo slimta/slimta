@@ -61,11 +61,7 @@ def _load_dict_lookup(options):
     if 'map' not in options:
         msg = 'config lookup requires map section'
         raise ConfigValidationError(msg)
-    key_template = options.get('key_template', '{address}')
-    map = options.map
-    if not isinstance(map, Mapping):
-        map = dict.fromkeys(map, {})
-    return DictLookup(map, key_template)
+    return DictLookup(options.map, options.key_template)
 
 
 def load_lookup(options):

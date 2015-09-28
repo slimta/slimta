@@ -24,12 +24,13 @@ import math
 from functools import wraps
 from socket import getfqdn, gethostname
 
+from passlib.apps import ldap_context
+
 from slimta.edge.smtp import SmtpValidators
 from slimta.edge.wsgi import WsgiValidators, WsgiResponse
 from slimta.util.dnsbl import check_dnsbl, DnsBlocklistGroup
 from slimta.lookup.drivers.dict import DictLookup
 from slimta.lookup.drivers.regex import RegexLookup
-from slimta.lookup.auth import LookupAuth
 from slimta.lookup.policy import LookupPolicy
 
 from slimta.policy.forward import Forward
@@ -90,6 +91,15 @@ class RuleHelpers(object):
             return _get_spamassassin_object(options)
         return None
 
+    def check_credentials(self, creds):
+        ret = self.lookup_creds.lookup_address(creds.authcid,
+                                               authzid=creds.authzid)
+        if not ret or 'password' not in ret:
+            return False
+        if not ldap_context.verify(creds.secret, ret['password']):
+            return False
+        return True
+
     def is_sender_ok(self, validators, sender):
         if self.lookup_senders:
             return self.lookup_senders.lookup_address(sender) is not None
@@ -141,6 +151,10 @@ def build_smtpedge_validators(options):
         @rules.get_banner_decorator()
         def handle_banner(self, reply, address):
             rules.set_banner_message(reply)
+        def handle_auth(self, reply, creds):
+            if not rules.check_credentials(creds):
+                reply.code = '535'
+                reply.message = '5.7.8 Authentication credentials invalid'
         @rules.get_mail_decorator()
         def handle_mail(self, reply, sender):
             if not rules.is_sender_ok(self, sender):
@@ -155,13 +169,6 @@ def build_smtpedge_validators(options):
                 reply.code = '554'
                 reply.message = '5.6.0 Message content rejected'
     return CustomValidators
-
-
-def build_smtpedge_auth(options):
-    rules = RuleHelpers(options)
-    if rules.lookup_creds is None:
-        return None
-    return LookupAuth(rules.lookup_creds)
 
 
 def build_wsgiedge_validators(options):

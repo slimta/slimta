@@ -437,7 +437,7 @@ class SlimtaState(object):
         queue = self._start_queue(queue_name)
         if options.type == 'smtp':
             from slimta.edge.smtp import SmtpEdge
-            from .helpers import build_smtpedge_validators, build_smtpedge_auth
+            from .helpers import build_smtpedge_validators
             from .helpers import fill_hostname_template
             hostname = fill_hostname_template(options.get('hostname'))
             listener_defaults = {'interface': '127.0.0.1', 'port': 25}
@@ -446,7 +446,7 @@ class SlimtaState(object):
             kwargs['tls'] = self._get_tls_options(options.get('tls'))
             kwargs['tls_immediately'] = options.get('tls_immediately', False)
             kwargs['validator_class'] = build_smtpedge_validators(options)
-            kwargs['auth_obj'] = build_smtpedge_auth(options)
+            kwargs['auth'] = ['PLAIN', 'LOGIN']
             kwargs['command_timeout'] = 20.0
             kwargs['data_timeout'] = 30.0
             kwargs['max_size'] = int(options.get('max_size', 10485760))

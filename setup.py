@@ -34,6 +34,7 @@ setup(name='slimta',
       install_requires=['gevent >= 1.0.2',
                         'python-slimta >= 1.1.0',
                         'python-slimta-lookup',
+                        'passlib',
                         'PyYAML'],
       extras_require={
               'diskstorage': ['python-slimta-diskstorage >= 0.2.0'],

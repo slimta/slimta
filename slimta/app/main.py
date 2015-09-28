@@ -30,9 +30,6 @@ from gevent import monkey; monkey.patch_all()
 from . import __version__
 from .state import SlimtaState
 
-# To fix compatibility with gevent 1.0 and Python 2.7.9+.
-from . import sslfix
-
 
 def parse_args():
     argparser = ArgumentParser(description='Configurable MTA based on the python-slimta libraries.')

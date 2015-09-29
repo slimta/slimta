@@ -156,11 +156,11 @@ def build_smtpedge_validators(options):
                 reply.code = '535'
                 reply.message = '5.7.8 Authentication credentials invalid'
         @rules.get_mail_decorator()
-        def handle_mail(self, reply, sender):
+        def handle_mail(self, reply, sender, params):
             if not rules.is_sender_ok(self, sender):
                 reply.code = '550'
                 reply.message = '5.7.1 Sender <{0}> Not allowed'.format(sender)
-        def handle_rcpt(self, reply, rcpt):
+        def handle_rcpt(self, reply, rcpt, params):
             if not rules.is_recipient_ok(rcpt):
                 reply.code = '550'
                 reply.message = '5.7.1 Recipient <{0}> Not allowed'.format(rcpt)

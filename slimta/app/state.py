@@ -38,6 +38,12 @@ from .validation import ConfigValidation, ConfigValidationError
 from .config import try_configs
 from .logging import setup_logging
 
+try:
+    from slimta.util import build_ipv4_socket_creator
+except ImportError as exc:
+    def build_ipv4_socket_creator(*args, **kwargs):
+        raise exc
+
 
 class SlimtaState(object):
 
@@ -236,6 +242,8 @@ class SlimtaState(object):
             kwargs['ehlo_as'] = fill_hostname_template(options.get('ehlo_as'))
             if 'tls' in options:
                 kwargs['tls'] = self._get_tls_options(options.tls)
+            if options.get('ipv4_only'):
+                kwargs['socket_creator'] = build_ipv4_socket_creator([25])
             new_relay = MxSmtpRelay(**kwargs)
         elif options.type == 'static':
             from slimta.relay.smtp.static import StaticSmtpRelay
@@ -254,6 +262,9 @@ class SlimtaState(object):
             if 'credentials' in options:
                 credentials = get_relay_credentials(options.get('credentials'))
                 kwargs['credentials'] = credentials
+            if options.get('ipv4_only'):
+                kwargs['socket_creator'] = \
+                    build_ipv4_socket_creator([kwargs['port']])
             new_relay = StaticSmtpRelay(**kwargs)
         elif options.type == 'lmtp':
             from slimta.relay.smtp.static import StaticLmtpRelay
@@ -272,6 +283,9 @@ class SlimtaState(object):
             if 'credentials' in options:
                 credentials = get_relay_credentials(options.get('credentials'))
                 kwargs['credentials'] = credentials
+            if options.get('ipv4_only'):
+                kwargs['socket_creator'] = \
+                    build_ipv4_socket_creator([kwargs['port']])
             new_relay = StaticLmtpRelay(**kwargs)
         elif options.type == 'http':
             from slimta.relay.http import HttpRelay

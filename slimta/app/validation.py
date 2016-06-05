@@ -166,7 +166,8 @@ class ConfigValidation(object):
         keydict = {'type': (basestring, True),
                    'factory': (basestring, False),
                    'ehlo_as': (basestring, False),
-                   'credentials': (Mapping, False)}
+                   'credentials': (Mapping, False),
+                   'ipv4_only': (bool, False)}
         self._check_keys(opts, keydict, stack)
         if opts.type == 'custom' and not opts.get('factory'):
             msg = "The 'factory' key must be given when using 'custom' type"

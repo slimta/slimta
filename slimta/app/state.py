@@ -480,6 +480,11 @@ class SlimtaState(object):
             tls = self._get_tls_options(options.get('tls'))
             server = new_edge.build_server(listener, tls=tls)
             server.start()
+        elif options.type == 'sendmail':
+            from slimta.edge import Edge
+            from .helpers import fill_hostname_template
+            hostname = fill_hostname_template(options.get('hostname'))
+            new_edge = Edge(queue, hostname)
         elif options.type == 'custom':
             new_edge = self._load_from_custom(options, queue)
         else:
@@ -507,6 +512,12 @@ class SlimtaState(object):
     def _handle_loop_interrupts(self, action):
         if action == 'reload':
             self.reload_config()
+
+    def sendmail(self, envelope):
+        self.start_everything()
+
+        self.setup_logging()
+        self.edges['sendmail'].handoff(envelope)
 
     def start_everything(self):
         self.cached_listeners = self.listeners.copy()

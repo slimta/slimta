@@ -45,6 +45,7 @@ setup(name='slimta',
       entry_points={'console_scripts': [
               'slimta = slimta.app.main:main',
               'slimta-setup = slimta.app.setup:setup',
+              'slimta-sendmail = slimta.app.sendmail:main',
           ]},
       package_data={'slimta.app': ['etc/*.yaml.sample', 'etc/init-*.tmpl']},
       classifiers=['Development Status :: 3 - Alpha',

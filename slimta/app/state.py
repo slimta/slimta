@@ -30,9 +30,9 @@ from importlib import import_module
 from functools import wraps
 from contextlib import contextmanager
 
-from gevent import sleep, socket
+from gevent import sleep, socket, ssl
 from gevent.event import AsyncResult
-import slimta.system
+from slimta.util import system
 
 from .validation import ConfigValidation, ConfigValidationError
 from .config import try_configs
@@ -108,7 +108,7 @@ class SlimtaState(object):
         group = process_options.get('group')
         if user or group:
             if os.getuid() == 0:
-                slimta.system.drop_privileges(user, group)
+                system.drop_privileges(user, group)
             else:
                 warnings.warn('Only superuser can drop privileges.')
 
@@ -119,44 +119,44 @@ class SlimtaState(object):
             so = process_options.get('stdout')
             se = process_options.get('stderr')
             si = process_options.get('stdin')
-            slimta.system.redirect_stdio(so, se, si)
+            system.redirect_stdio(so, se, si)
 
     def daemonize(self):
         flag = self.cfg.process.get(self.program).get('daemon', False)
         if self.args.attached is None and flag:
-            slimta.system.daemonize()
+            system.daemonize()
         elif not self.args.attached:
-            slimta.system.daemonize()
+            system.daemonize()
 
     def create_pid_file(self):
         args_pid_file = self.args.pid_file
         cfg_pid_file = self.cfg.process.get(self.program).get('pid_file')
-        return slimta.system.PidFile(args_pid_file or cfg_pid_file)
+        return system.PidFile(args_pid_file or cfg_pid_file)
 
     def setup_logging(self):
         settings = self.cfg.process.get(self.program).get('logging')
         setup_logging(settings)
 
-    def _get_tls_options(self, tls_opts):
+    def _get_ssl_context(self, ctx, tls_opts):
         if not tls_opts:
             return None
-        tls_opts = dict(tls_opts).copy()
-        certfile = tls_opts.pop('certfile', None)
+        certfile = tls_opts.get('certfile', None)
+        keyfile = tls_opts.get('keyfile', None)
+        cafile = tls_opts.get('ca_certs', None)
         if certfile is not None:
             certfile = os.path.expandvars(certfile)
             certfile = os.path.expanduser(certfile)
-            tls_opts['certfile'] = certfile
-        keyfile = tls_opts.pop('keyfile', None)
         if keyfile is not None:
             keyfile = os.path.expandvars(keyfile)
             keyfile = os.path.expanduser(keyfile)
-            tls_opts['keyfile'] = keyfile
-        ca_certs = tls_opts.pop('ca_certs', None)
         if ca_certs is not None:
             ca_certs = os.path.expandvars(ca_certs)
             ca_certs = os.path.expanduser(ca_certs)
-            tls_opts['ca_certs'] = ca_certs
-        return tls_opts
+        if certfile or keyfile:
+            ctx.load_cert_chain(certfile, keyfile)
+        if cafile:
+            ctx.load_verify_locations(cafile)
+        return ctx
 
     def _import_symbol(self, path):
         module_name, _, symbol_name = path.rpartition(':')
@@ -230,6 +230,7 @@ class SlimtaState(object):
         if not options:
             options = getattr(self.cfg.relay, name)
         new_relay = None
+        ctx = ssl.create_default_context()
         if options.type == 'mx':
             from slimta.relay.smtp.mx import MxSmtpRelay
             from .helpers import fill_hostname_template
@@ -241,7 +242,7 @@ class SlimtaState(object):
             kwargs['pool_size'] = options.get('concurrent_connections', 5)
             kwargs['ehlo_as'] = fill_hostname_template(options.get('ehlo_as'))
             if 'tls' in options:
-                kwargs['tls'] = self._get_tls_options(options.tls)
+                kwargs['context'] = self._get_ssl_context(ctx, options.tls)
             if options.get('ipv4_only'):
                 kwargs['socket_creator'] = build_ipv4_socket_creator([25])
             new_relay = MxSmtpRelay(**kwargs)
@@ -258,7 +259,7 @@ class SlimtaState(object):
             kwargs['pool_size'] = options.get('concurrent_connections', 5)
             kwargs['ehlo_as'] = fill_hostname_template(options.get('ehlo_as'))
             if 'tls' in options:
-                kwargs['tls'] = self._get_tls_options(options.tls)
+                kwargs['context'] = self._get_ssl_context(ctx, options.tls)
             if 'credentials' in options:
                 credentials = get_relay_credentials(options.get('credentials'))
                 kwargs['credentials'] = credentials
@@ -279,7 +280,7 @@ class SlimtaState(object):
             kwargs['pool_size'] = options.get('concurrent_connections', 5)
             kwargs['ehlo_as'] = fill_hostname_template(options.get('ehlo_as'))
             if 'tls' in options:
-                kwargs['tls'] = self._get_tls_options(options.tls)
+                kwargs['context'] = self._get_ssl_context(ctx, options.tls)
             if 'credentials' in options:
                 credentials = get_relay_credentials(options.get('credentials'))
                 kwargs['credentials'] = credentials
@@ -295,7 +296,7 @@ class SlimtaState(object):
             kwargs['timeout'] = options.get('timeout', 60)
             kwargs['idle_timeout'] = options.get('idle_timeout', 10)
             if 'tls' in options:
-                kwargs['tls'] = self._get_tls_options(options.tls)
+                kwargs['context'] = self._get_ssl_context(ctx, options.tls)
             new_relay = HttpRelay(options.url, **kwargs)
         elif options.type == 'blackhole':
             from slimta.relay.blackhole import BlackholeRelay
@@ -373,7 +374,6 @@ class SlimtaState(object):
             from slimta.cloudstorage import CloudStorage
             from slimta.cloudstorage.rackspace import RackspaceCloudAuth, \
                     RackspaceCloudFiles, RackspaceCloudQueues
-            tls = self._get_tls_options(options.get('tls'))
             credentials = {'username': options.username}
             if 'password' in options:
                 credentials['password'] = options.password
@@ -382,19 +382,16 @@ class SlimtaState(object):
             if 'tenant_id' in options:
                 credentials['tenant_id'] = options.tenant_id
             auth_kwargs = {'region': options.get('region'),
-                           'timeout': 10.0,
-                           'tls': tls}
+                           'timeout': 10.0}
             if 'endpoint' in options:
                 auth_kwargs['endpoint'] = options.endpoint
             auth = RackspaceCloudAuth(credentials, **auth_kwargs)
             cloud_files = RackspaceCloudFiles(auth,
-                    container=options.container_name,
-                    tls=tls, timeout=20.0)
+                    container=options.container_name, timeout=20.0)
             cloud_queues = None
             if 'queue_name' in options:
                 cloud_queues = RackspaceCloudQueues(auth,
-                        queue_name=options.queue_name,
-                        tls=tls, timeout=10.0)
+                        queue_name=options.queue_name, timeout=10.0)
             store = CloudStorage(cloud_files, cloud_queues)
             new_queue = Queue(store, relay, backoff=backoff,
                               bounce_queue=bounce_queue)
@@ -449,6 +446,7 @@ class SlimtaState(object):
         new_edge = None
         queue_name = options.queue
         queue = self._start_queue(queue_name)
+        ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
         if options.type == 'smtp':
             from slimta.edge.smtp import SmtpEdge
             from .helpers import build_smtpedge_validators
@@ -457,7 +455,7 @@ class SlimtaState(object):
             listener_defaults = {'interface': '127.0.0.1', 'port': 25}
             listener = self._get_listener(options.listener, listener_defaults)
             kwargs = {}
-            kwargs['tls'] = self._get_tls_options(options.get('tls'))
+            kwargs['context'] = self._get_ssl_context(ctx, options.get('tls'))
             kwargs['tls_immediately'] = options.get('tls_immediately', False)
             kwargs['validator_class'] = build_smtpedge_validators(options)
             kwargs['auth'] = ['PLAIN', 'LOGIN']
@@ -477,8 +475,7 @@ class SlimtaState(object):
             new_edge = WsgiEdge(queue, hostname, validator_class, uri_pattern)
             listener_defaults = {'interface': '127.0.0.1', 'port': 8025}
             listener = self._get_listener(options.listener, listener_defaults)
-            tls = self._get_tls_options(options.get('tls'))
-            server = new_edge.build_server(listener, tls=tls)
+            server = new_edge.build_server(listener, tls=options.get('tls'))
             server.start()
         elif options.type == 'custom':
             new_edge = self._load_from_custom(options, queue)

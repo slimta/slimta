@@ -106,7 +106,8 @@ class ConfigValidation(object):
                              stack+['listener'], True)
         if 'tls' in opts:
             tls_keydict = {'certfile': (basestring, True),
-                           'keyfile': (basestring, True)}
+                           'keyfile': (basestring, True),
+                           'ca_certs': (basestring, False)}
             self._check_keys(opts.tls, tls_keydict, stack+['tls'])
         if 'rules' in opts:
             rules_keydict = {'banner': (basestring, False),

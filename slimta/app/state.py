@@ -149,9 +149,9 @@ class SlimtaState(object):
         if keyfile is not None:
             keyfile = os.path.expandvars(keyfile)
             keyfile = os.path.expanduser(keyfile)
-        if ca_certs is not None:
-            ca_certs = os.path.expandvars(ca_certs)
-            ca_certs = os.path.expanduser(ca_certs)
+        if cafile is not None:
+            cafile = os.path.expandvars(cafile)
+            cafile = os.path.expanduser(cafile)
         if certfile or keyfile:
             ctx.load_cert_chain(certfile, keyfile)
         if cafile:

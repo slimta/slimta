@@ -103,7 +103,7 @@ class RuleHelpers(object):
     def is_sender_ok(self, validators, sender):
         if self.lookup_senders:
             return self.lookup_senders.lookup_address(sender) is not None
-        if self.lookup_creds and not validators.session.auth_result:
+        if self.lookup_creds and not validators.session.auth:
             return False
         return True
 

@@ -92,6 +92,8 @@ class RuleHelpers(object):
         return None
 
     def check_credentials(self, creds):
+        if not self.lookup_creds:
+            return False
         ret = self.lookup_creds.lookup_address(creds.authcid,
                                                authzid=creds.authzid)
         if not ret or 'password' not in ret:

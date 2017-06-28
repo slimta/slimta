@@ -472,11 +472,12 @@ class SlimtaState(object):
             hostname = fill_hostname_template(options.get('hostname'))
             uri_pattern = options.get('uri')
             validator_class = build_wsgiedge_validators(options)
-            new_edge = WsgiEdge(queue, hostname, validator_class, uri_pattern)
+            context = self._get_ssl_context(ctx, options.get('tls'))
             listener_defaults = {'interface': '127.0.0.1', 'port': 8025}
             listener = self._get_listener(options.listener, listener_defaults)
-            server = new_edge.build_server(listener, tls=options.get('tls'))
-            server.start()
+            new_edge = WsgiEdge(queue, hostname, validator_class, uri_pattern,
+                                listener=listener, context=context)
+            new_edge.start()
         elif options.type == 'custom':
             new_edge = self._load_from_custom(options, queue)
         else:

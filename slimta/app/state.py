@@ -55,6 +55,7 @@ class SlimtaState(object):
         self.args = args
         self.cfg = None
         self.loop_interrupt = AsyncResult()
+        self.ssl_contexts = {}
         self.cached_listeners = {}
         self.listeners = {}
         self.edges = {}
@@ -137,9 +138,21 @@ class SlimtaState(object):
         settings = self.cfg.process.get(self.program).get('logging')
         setup_logging(settings)
 
-    def _get_ssl_context(self, ctx, tls_opts):
+    def _get_client_ssl_context(self, tls_opts):
+        purpose = ssl.Purpose.CLIENT_AUTH
+        return self._get_ssl_context(purpose, tls_opts)
+
+    def _get_server_ssl_context(self, tls_opts):
+        purpose = ssl.Purpose.SERVER_AUTH
+        return self._get_ssl_context(purpose, tls_opts)
+
+    def _get_ssl_context(self, purpose, tls_opts):
         if not tls_opts:
-            return None
+            return ssl.create_default_context(purpose)
+        key = (purpose, hash(tuple(tls_opts.iteritems())))
+        if key in self.ssl_contexts:
+            return self.ssl_contexts[key]
+        ctx = ssl.create_default_context(purpose)
         certfile = tls_opts.get('certfile', None)
         keyfile = tls_opts.get('keyfile', None)
         cafile = tls_opts.get('ca_certs', None)
@@ -156,6 +169,7 @@ class SlimtaState(object):
             ctx.load_cert_chain(certfile, keyfile)
         if cafile:
             ctx.load_verify_locations(cafile)
+        self.ssl_contexts[key] = ctx
         return ctx
 
     def _import_symbol(self, path):
@@ -230,7 +244,6 @@ class SlimtaState(object):
         if not options:
             options = getattr(self.cfg.relay, name)
         new_relay = None
-        ctx = ssl.create_default_context()
         if options.type == 'mx':
             from slimta.relay.smtp.mx import MxSmtpRelay
             from .helpers import fill_hostname_template
@@ -241,8 +254,8 @@ class SlimtaState(object):
             kwargs['idle_timeout'] = options.get('idle_timeout', 10)
             kwargs['pool_size'] = options.get('concurrent_connections', 5)
             kwargs['ehlo_as'] = fill_hostname_template(options.get('ehlo_as'))
-            if 'tls' in options:
-                kwargs['context'] = self._get_ssl_context(ctx, options.tls)
+            kwargs['context'] = self._get_client_ssl_context(
+                    options.get('tls'))
             if options.get('ipv4_only'):
                 kwargs['socket_creator'] = build_ipv4_socket_creator([25])
             new_relay = MxSmtpRelay(**kwargs)
@@ -258,8 +271,8 @@ class SlimtaState(object):
             kwargs['idle_timeout'] = options.get('idle_timeout', 10)
             kwargs['pool_size'] = options.get('concurrent_connections', 5)
             kwargs['ehlo_as'] = fill_hostname_template(options.get('ehlo_as'))
-            if 'tls' in options:
-                kwargs['context'] = self._get_ssl_context(ctx, options.tls)
+            kwargs['context'] = self._get_client_ssl_context(
+                    options.get('tls'))
             if 'credentials' in options:
                 credentials = get_relay_credentials(options.get('credentials'))
                 kwargs['credentials'] = credentials
@@ -279,8 +292,8 @@ class SlimtaState(object):
             kwargs['idle_timeout'] = options.get('idle_timeout', 10)
             kwargs['pool_size'] = options.get('concurrent_connections', 5)
             kwargs['ehlo_as'] = fill_hostname_template(options.get('ehlo_as'))
-            if 'tls' in options:
-                kwargs['context'] = self._get_ssl_context(ctx, options.tls)
+            kwargs['context'] = self._get_client_ssl_context(
+                    options.get('tls'))
             if 'credentials' in options:
                 credentials = get_relay_credentials(options.get('credentials'))
                 kwargs['credentials'] = credentials
@@ -295,8 +308,8 @@ class SlimtaState(object):
             kwargs['ehlo_as'] = fill_hostname_template(options.get('ehlo_as'))
             kwargs['timeout'] = options.get('timeout', 60)
             kwargs['idle_timeout'] = options.get('idle_timeout', 10)
-            if 'tls' in options:
-                kwargs['context'] = self._get_ssl_context(ctx, options.tls)
+            kwargs['context'] = self._get_client_ssl_context(
+                    options.get('tls'))
             new_relay = HttpRelay(options.url, **kwargs)
         elif options.type == 'blackhole':
             from slimta.relay.blackhole import BlackholeRelay
@@ -433,7 +446,7 @@ class SlimtaState(object):
             new_queue = self._load_from_custom(options, relay)
         else:
             msg = 'queue type does not exist: '+options.type
-            raise ConfigValidationError()
+            raise ConfigValidationError(msg)
         add_queue_policies(new_queue, options.get('policies', []))
         self.queues[name] = new_queue
         return new_queue
@@ -446,7 +459,6 @@ class SlimtaState(object):
         new_edge = None
         queue_name = options.queue
         queue = self._start_queue(queue_name)
-        ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
         if options.type == 'smtp':
             from slimta.edge.smtp import SmtpEdge
             from .helpers import build_smtpedge_validators
@@ -455,7 +467,8 @@ class SlimtaState(object):
             listener_defaults = {'interface': '127.0.0.1', 'port': 25}
             listener = self._get_listener(options.listener, listener_defaults)
             kwargs = {}
-            kwargs['context'] = self._get_ssl_context(ctx, options.get('tls'))
+            kwargs['context'] = self._get_server_ssl_context(
+                    options.get('tls'))
             kwargs['tls_immediately'] = options.get('tls_immediately', False)
             kwargs['validator_class'] = build_smtpedge_validators(options)
             kwargs['auth'] = ['PLAIN', 'LOGIN']
@@ -472,7 +485,8 @@ class SlimtaState(object):
             hostname = fill_hostname_template(options.get('hostname'))
             uri_pattern = options.get('uri')
             validator_class = build_wsgiedge_validators(options)
-            context = self._get_ssl_context(ctx, options.get('tls'))
+            context = self._get_server_ssl_context(
+                    options.get('tls'))
             listener_defaults = {'interface': '127.0.0.1', 'port': 8025}
             listener = self._get_listener(options.listener, listener_defaults)
             new_edge = WsgiEdge(queue, hostname, validator_class, uri_pattern,

@@ -65,17 +65,17 @@ class SlimtaState(object):
     def _with_sighandlers(self):
         from signal import SIGTERM, SIGHUP, SIG_DFL
         from gevent import signal
-        def handle_term():
+        def handle_term(signum, frame):
             sys.exit(0)
-        def handle_hup():
+        def handle_hup(signum, frame):
             self.loop_interrupt.set('reload')
-        old_term = signal(SIGTERM, handle_term) or SIG_DFL
-        old_hup = signal(SIGHUP, handle_hup) or SIG_DFL
+        old_term = signal.signal(SIGTERM, handle_term) or SIG_DFL
+        old_hup = signal.signal(SIGHUP, handle_hup) or SIG_DFL
         try:
             yield
         finally:
-            signal(SIGTERM, old_term)
-            signal(SIGHUP, old_hup)
+            signal.signal(SIGTERM, old_term)
+            signal.signal(SIGHUP, old_hup)
 
     def load_config(self, argparser=None):
         if self.args.process_name:

@@ -36,6 +36,8 @@ from slimta.util import system
 
 from .validation import ConfigValidation, ConfigValidationError
 from .config import try_configs
+from .importutil import custom_factory
+from .listeners import Listeners
 from .logging import setup_logging
 
 try:
@@ -58,9 +60,9 @@ class SlimtaState(object):
         self.ssl_contexts = {}
         self.cached_listeners = {}
         self.listeners = {}
-        self.edges = {}
         self.queues = {}
         self.relays = {}
+        self.edges = []
 
     @contextmanager
     def _with_sighandlers(self):
@@ -104,9 +106,9 @@ class SlimtaState(object):
                 sys.exit(2)
 
     def drop_privileges(self):
-        process_options = self.cfg.process.get(self.program)
-        user = process_options.get('user')
-        group = process_options.get('group')
+        process_options = self.cfg.process[self.program]
+        user = process_options.user
+        group = process_options.group
         if user or group:
             if os.getuid() == 0:
                 system.drop_privileges(user, group)
@@ -114,16 +116,16 @@ class SlimtaState(object):
                 warnings.warn('Only superuser can drop privileges.')
 
     def redirect_streams(self):
-        process_options = self.cfg.process.get(self.program)
-        flag = process_options.get('daemon', False)
+        process_options = self.cfg.process[self.program]
+        flag = process_options.daemon
         if flag and not self.args.attached:
-            so = process_options.get('stdout')
-            se = process_options.get('stderr')
-            si = process_options.get('stdin')
+            so = process_options.stdout
+            se = process_options.stderr
+            si = process_options.stdin
             system.redirect_stdio(so, se, si)
 
     def daemonize(self):
-        flag = self.cfg.process.get(self.program).get('daemon', False)
+        flag = self.cfg.process[self.program].daemon
         if self.args.attached is None and flag:
             system.daemonize()
         elif not self.args.attached:
@@ -131,11 +133,11 @@ class SlimtaState(object):
 
     def create_pid_file(self):
         args_pid_file = self.args.pid_file
-        cfg_pid_file = self.cfg.process.get(self.program).get('pid_file')
+        cfg_pid_file = self.cfg.process[self.program].pid_file
         return system.PidFile(args_pid_file or cfg_pid_file)
 
     def setup_logging(self):
-        settings = self.cfg.process.get(self.program).get('logging')
+        settings = self.cfg.process[self.program].logging
         setup_logging(settings)
 
     def _get_client_ssl_context(self, tls_opts):
@@ -153,9 +155,9 @@ class SlimtaState(object):
         if key in self.ssl_contexts:
             return self.ssl_contexts[key]
         ctx = ssl.create_default_context(purpose)
-        certfile = tls_opts.get('certfile', None)
-        keyfile = tls_opts.get('keyfile', None)
-        cafile = tls_opts.get('ca_certs', None)
+        certfile = tls_opts.certfile
+        keyfile = tls_opts.keyfile
+        cafile = tls_opts.ca_certs
         if certfile is not None:
             certfile = os.path.expandvars(certfile)
             certfile = os.path.expanduser(certfile)
@@ -172,72 +174,6 @@ class SlimtaState(object):
         self.ssl_contexts[key] = ctx
         return ctx
 
-    def _import_symbol(self, path):
-        module_name, _, symbol_name = path.rpartition(':')
-        if not module_name:
-            module_name, _, symbol_name = path.rpartition('.')
-        if not module_name:
-            module_name, symbol_name = path, ''
-        mod = import_module(module_name)
-        if symbol_name:
-            try:
-                return getattr(mod, symbol_name)
-            except AttributeError:
-                raise ImportError('cannot import name '+symbol_name)
-        else:
-            return mod
-
-    def _load_from_custom(self, options, *extra):
-        factory = self._import_symbol(options.factory)
-        return factory(options, *extra)
-
-    def _copy_listener(self, listener):
-        if isinstance(listener, socket.socket):
-            fd = listener.fileno()
-            family = listener.family
-            type = listener.type
-            proto = listener.proto
-            return socket.fromfd(fd, family, type, proto)
-        return listener
-
-    def _get_listener(self, options, defaults):
-        key = hash(tuple(options.iteritems()))
-        if key in self.cached_listeners:
-            existing = self.cached_listeners[key]
-            listener_copy = self._copy_listener(existing)
-            self.listeners[key] = listener_copy
-            return listener_copy
-        type = options.get('type', 'tcp')
-        new_listener = None
-        if type in ('tcp', 'udp', 'unix'):
-            if type == 'tcp':
-                interface = options.get('interface', defaults.get('interface'))
-                port = int(options.get('port', defaults.get('port')))
-                new_listener = socket.socket(socket.AF_INET,
-                                             socket.SOCK_STREAM)
-                address = (interface, port)
-            elif type == 'udp':
-                interface = options.get('interface', defaults.get('interface'))
-                port = int(options.get('port', defaults.get('port')))
-                new_listener = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                address = (interface, port)
-            elif type == 'unix':
-                new_listener = socket.socket(socket.AF_UNIX,
-                                             socket.SOCK_STREAM)
-                address = options.get('path', defaults.get('path'))
-            new_listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            new_listener.setblocking(0)
-            new_listener.bind(address)
-            if type != 'udp':
-                backlog = int(options.get('backlog', 256))
-                new_listener.listen(backlog)
-        elif type == 'custom':
-            new_listener = self._load_from_custom(options)
-        else:
-            raise ValueError('Unknown listener type: {0}'.format(type))
-        self.listeners[key] = new_listener
-        return new_listener
-
     def _start_relay(self, name, options=None):
         if name in self.relays:
             return self.relays[name]
@@ -253,10 +189,9 @@ class SlimtaState(object):
             kwargs['data_timeout'] = options.get('data_timeout', 60)
             kwargs['idle_timeout'] = options.get('idle_timeout', 10)
             kwargs['pool_size'] = options.get('concurrent_connections', 5)
-            kwargs['ehlo_as'] = fill_hostname_template(options.get('ehlo_as'))
-            kwargs['context'] = self._get_client_ssl_context(
-                    options.get('tls'))
-            if options.get('ipv4_only'):
+            kwargs['ehlo_as'] = fill_hostname_template(options.ehlo_as)
+            kwargs['context'] = self._get_client_ssl_context(options.tls)
+            if options.ipv4_only:
                 kwargs['socket_creator'] = build_ipv4_socket_creator([25])
             new_relay = MxSmtpRelay(**kwargs)
         elif options.type == 'static':
@@ -270,13 +205,12 @@ class SlimtaState(object):
             kwargs['data_timeout'] = options.get('data_timeout', 60)
             kwargs['idle_timeout'] = options.get('idle_timeout', 10)
             kwargs['pool_size'] = options.get('concurrent_connections', 5)
-            kwargs['ehlo_as'] = fill_hostname_template(options.get('ehlo_as'))
-            kwargs['context'] = self._get_client_ssl_context(
-                    options.get('tls'))
+            kwargs['ehlo_as'] = fill_hostname_template(options.ehlo_as)
+            kwargs['context'] = self._get_client_ssl_context(options.tls)
             if 'credentials' in options:
-                credentials = get_relay_credentials(options.get('credentials'))
+                credentials = get_relay_credentials(options.credentials)
                 kwargs['credentials'] = credentials
-            if options.get('ipv4_only'):
+            if options.ipv4_only:
                 kwargs['socket_creator'] = \
                     build_ipv4_socket_creator([kwargs['port']])
             new_relay = StaticSmtpRelay(**kwargs)
@@ -291,13 +225,12 @@ class SlimtaState(object):
             kwargs['data_timeout'] = options.get('data_timeout', 60)
             kwargs['idle_timeout'] = options.get('idle_timeout', 10)
             kwargs['pool_size'] = options.get('concurrent_connections', 5)
-            kwargs['ehlo_as'] = fill_hostname_template(options.get('ehlo_as'))
-            kwargs['context'] = self._get_client_ssl_context(
-                    options.get('tls'))
+            kwargs['ehlo_as'] = fill_hostname_template(options.ehlo_as)
+            kwargs['context'] = self._get_client_ssl_context(options.tls)
             if 'credentials' in options:
-                credentials = get_relay_credentials(options.get('credentials'))
+                credentials = get_relay_credentials(options.credentials)
                 kwargs['credentials'] = credentials
-            if options.get('ipv4_only'):
+            if options.ipv4_only:
                 kwargs['socket_creator'] = \
                     build_ipv4_socket_creator([kwargs['port']])
             new_relay = StaticLmtpRelay(**kwargs)
@@ -305,25 +238,24 @@ class SlimtaState(object):
             from slimta.relay.http import HttpRelay
             from .helpers import fill_hostname_template
             kwargs = {}
-            kwargs['ehlo_as'] = fill_hostname_template(options.get('ehlo_as'))
+            kwargs['ehlo_as'] = fill_hostname_template(options.ehlo_as)
             kwargs['timeout'] = options.get('timeout', 60)
             kwargs['idle_timeout'] = options.get('idle_timeout', 10)
-            kwargs['context'] = self._get_client_ssl_context(
-                    options.get('tls'))
+            kwargs['context'] = self._get_client_ssl_context(options.tls)
             new_relay = HttpRelay(options.url, **kwargs)
         elif options.type == 'blackhole':
             from slimta.relay.blackhole import BlackholeRelay
             new_relay = BlackholeRelay()
         elif options.type == 'maildrop':
             from slimta.relay.pipe import MaildropRelay
-            path = options.get('path')
+            path = options.path
             new_relay = MaildropRelay(path)
         elif options.type == 'dovecot':
             from slimta.relay.pipe import DovecotLdaRelay
-            path = options.get('path')
+            path = options.path
             new_relay = DovecotLdaRelay(path)
         elif options.type == 'custom':
-            new_relay = self._load_from_custom(options)
+            new_relay = custom_factory(options)
         else:
             msg = 'relay type does not exist: '+options.type
             raise ConfigValidationError(msg)
@@ -337,7 +269,7 @@ class SlimtaState(object):
             options = getattr(self.cfg.queue, name)
         from .helpers import add_queue_policies, build_backoff_function
         new_queue = None
-        relay_name = options.get('relay')
+        relay_name = options.relay
         relay = self._start_relay(relay_name) if relay_name else None
         bounce_queue_name = options.get('bounce_queue', name)
         bounce_queue = self._start_queue(bounce_queue_name) \
@@ -346,7 +278,7 @@ class SlimtaState(object):
             from slimta.queue import Queue
             from slimta.queue.dict import DictStorage
             store = DictStorage()
-            backoff = build_backoff_function(options.get('retry'))
+            backoff = build_backoff_function(options.retry)
             new_queue = Queue(store, relay, backoff=backoff,
                               bounce_queue=bounce_queue)
             new_queue.start()
@@ -355,9 +287,9 @@ class SlimtaState(object):
             from slimta.diskstorage import DiskStorage
             env_dir = options.envelope_dir
             meta_dir = options.meta_dir
-            tmp_dir = options.get('tmp_dir')
+            tmp_dir = options.tmp_dir
             store = DiskStorage(env_dir, meta_dir, tmp_dir)
-            backoff = build_backoff_function(options.get('retry'))
+            backoff = build_backoff_function(options.retry)
             new_queue = Queue(store, relay, backoff=backoff,
                               bounce_queue=bounce_queue)
             new_queue.start()
@@ -378,7 +310,7 @@ class SlimtaState(object):
             if 'prefix' in options:
                 kwargs['prefix'] = options.prefix
             store = RedisStorage(**kwargs)
-            backoff = build_backoff_function(options.get('retry'))
+            backoff = build_backoff_function(options.retry)
             new_queue = Queue(store, relay, backoff=backoff,
                               bounce_queue=bounce_queue)
             new_queue.start()
@@ -394,7 +326,7 @@ class SlimtaState(object):
                 credentials['api_key'] = options.api_key
             if 'tenant_id' in options:
                 credentials['tenant_id'] = options.tenant_id
-            auth_kwargs = {'region': options.get('region'),
+            auth_kwargs = {'region': options.region,
                            'timeout': 10.0}
             if 'endpoint' in options:
                 auth_kwargs['endpoint'] = options.endpoint
@@ -443,7 +375,7 @@ class SlimtaState(object):
             from slimta.queue.proxy import ProxyQueue
             new_queue = ProxyQueue(relay)
         elif options.type == 'custom':
-            new_queue = self._load_from_custom(options, relay)
+            new_queue = custom_factory(options, relay)
         else:
             msg = 'queue type does not exist: '+options.type
             raise ConfigValidationError(msg)
@@ -452,64 +384,59 @@ class SlimtaState(object):
         return new_queue
 
     def _start_edge(self, name, options=None):
-        if name in self.edges:
-            return self.edges[name]
         if not options:
             options = getattr(self.cfg.edge, name)
-        new_edge = None
+        new_edges = []
         queue_name = options.queue
         queue = self._start_queue(queue_name)
         if options.type == 'smtp':
             from slimta.edge.smtp import SmtpEdge
             from .helpers import build_smtpedge_validators
             from .helpers import fill_hostname_template
-            hostname = fill_hostname_template(options.get('hostname'))
-            listener_defaults = {'interface': '127.0.0.1', 'port': 25}
-            listener = self._get_listener(options.listener, listener_defaults)
             kwargs = {}
-            kwargs['context'] = self._get_server_ssl_context(
-                    options.get('tls'))
-            kwargs['tls_immediately'] = options.get('tls_immediately', False)
+            kwargs['context'] = self._get_server_ssl_context(options.tls)
+            kwargs['tls_immediately'] = options.tls_immediately
             kwargs['validator_class'] = build_smtpedge_validators(options)
             kwargs['auth'] = ['PLAIN', 'LOGIN']
             kwargs['command_timeout'] = 20.0
             kwargs['data_timeout'] = 30.0
             kwargs['max_size'] = int(options.get('max_size', 10485760))
-            kwargs['hostname'] = hostname
-            new_edge = SmtpEdge(listener, queue, **kwargs)
-            new_edge.start()
+            kwargs['hostname'] = fill_hostname_template(options.hostname)
+            for listener in Listeners(options, 25):
+                new_edge = SmtpEdge(listener, queue, **kwargs)
+                new_edge.start()
+                self.edges.append(new_edge)
         elif options.type == 'http':
             from slimta.edge.wsgi import WsgiEdge
             from .helpers import build_wsgiedge_validators
             from .helpers import fill_hostname_template
-            hostname = fill_hostname_template(options.get('hostname'))
-            uri_pattern = options.get('uri')
-            validator_class = build_wsgiedge_validators(options)
-            context = self._get_server_ssl_context(
-                    options.get('tls'))
-            listener_defaults = {'interface': '127.0.0.1', 'port': 8025}
-            listener = self._get_listener(options.listener, listener_defaults)
-            new_edge = WsgiEdge(queue, hostname, validator_class, uri_pattern,
-                                listener=listener, context=context)
-            new_edge.start()
+            kwargs = {}
+            kwargs['hostname'] = fill_hostname_template(options.hostname)
+            kwargs['validator_class'] = build_wsgiedge_validators(options)
+            kwargs['uri_pattern'] = options.uri
+            kwargs['context'] = self._get_server_ssl_context(options.tls)
+            listener = self._get_listener(options, 8025)
+            for listener in Listeners(options, 8025):
+                new_edge = WsgiEdge(queue, listener=listener, **kwargs)
+                new_edge.start()
+                self.edges.append(new_edge)
         elif options.type == 'custom':
-            new_edge = self._load_from_custom(options, queue)
+            new_edge = custom_factory(options, queue)
+            self.edges.append(new_edge)
         else:
             msg = 'edge type does not exist: '+options.type
             raise ConfigValidationError(msg)
-        self.edges[name] = new_edge
-        return new_edge
 
     def reload_config(self):
         self.load_config()
-        old_edges = self.edges.copy()
+        old_edges = self.edges[:]
         old_queues = self.queues.copy()
         old_relays = self.relays.copy()
-        self.edges = {}
+        self.edges = []
         self.queues = {}
         self.relays = {}
         self.start_everything()
-        for edge in old_edges.itervalues():
+        for edge in old_edges:
             edge.kill()
         for queue in old_queues.itervalues():
             queue.kill()

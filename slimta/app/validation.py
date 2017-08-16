@@ -82,11 +82,23 @@ class ConfigValidation(object):
         keydict = {'type': (basestring, True)}
         self._check_keys(opts, keydict, stack)
 
+    def _check_listener(self, opts, stack):
+        keydict = {'type': (basestring, False),
+                   'interface': (basestring, False),
+                   'port': (int, False),
+                   'path': (basestring, False),
+                   'factory': (basestring, False)}
+        self._check_keys(opts, keydict, stack, True)
+        if opts.get('type') == 'custom' and not opts.get('factory'):
+            msg = "The 'factory' key must be given when using 'custom' type"
+            raise ConfigValidationError(msg, stack)
+
     def _check_edge(self, opts, stack):
         keydict = {'type': (basestring, True),
                    'queue': (basestring, True),
                    'factory': (basestring, False),
                    'listener': (Mapping, False),
+                   'listeners': (Sequence, False),
                    'hostname': (basestring, False),
                    'max_size': (int, False),
                    'tls': (Mapping, False),
@@ -99,11 +111,14 @@ class ConfigValidation(object):
         if opts.type == 'custom' and not opts.get('factory'):
             msg = "The 'factory' key must be given when using 'custom' type"
             raise ConfigValidationError(msg, stack)
-        if 'listener' in opts:
-            listener_keydict = {'interface': (basestring, False),
-                                'port': (int, False)}
-            self._check_keys(opts.listener, listener_keydict,
-                             stack+['listener'], True)
+        if 'listeners' in opts:
+            if 'listener' in opts:
+                msg = "Cannot use both 'listener' and 'listeners' keys"
+                raise ConfigValidationError(msg, stack)
+            for i, listener in enumerate(opts.get('listeners')):
+                self._check_listener(listener, stack+['listeners', i])
+        elif 'listener' in opts:
+            self._check_listener(opts.listener, stack+['listener'])
         if 'tls' in opts:
             tls_keydict = {'certfile': (basestring, True),
                            'keyfile': (basestring, True),

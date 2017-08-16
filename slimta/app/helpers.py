@@ -60,16 +60,16 @@ class RuleHelpers(object):
 
     def __init__(self, options):
         rules = options.get('rules', {})
-        self.banner = fill_hostname_template(rules.get('banner'))
-        self.dnsbl = rules.get('dnsbl')
+        self.banner = fill_hostname_template(rules.banner)
+        self.dnsbl = rules.dnsbl
         self.lookup_senders = self._get_lookup(rules, 'lookup_senders',
                                                'only_senders', 'regex_senders')
         self.lookup_rcpts = self._get_lookup(rules, 'lookup_recipients',
                                              'only_recipients',
                                              'regex_recipients')
-        self.lookup_creds = load_lookup(rules.get('lookup_credentials'))
-        self.reject_spf = rules.get('reject_spf')
-        self.scanner = self._get_scanner(rules.get('reject_spam'))
+        self.lookup_creds = load_lookup(rules.lookup_credentials)
+        self.reject_spf = rules.reject_spf
+        self.scanner = self._get_scanner(rules.reject_spam)
 
     def _get_lookup(self, rules, lookup_section, list_section, regex_section):
         if lookup_section in rules:
@@ -196,7 +196,7 @@ def add_queue_policies(queue, policy_options):
         if policy.type == 'add_date_header':
             queue.add_policy(AddDateHeader())
         elif policy.type == 'add_messageid_header':
-            hostname = policy.get('hostname')
+            hostname = policy.hostname
             queue.add_policy(AddMessageIdHeader(hostname))
         elif policy.type == 'add_received_header':
             queue.add_policy(AddReceivedHeader())

@@ -46,6 +46,18 @@ class _ConfigDict(dict):
     def __getattr__(self, key):
         return self[key]
 
+    def __getitem__(self, key):
+        try:
+            return super(_ConfigDict, self).__getitem__(key)
+        except KeyError:
+            return None
+
+    def get(self, key, default=None):
+        try:
+            return super(_ConfigDict, self).__getitem__(key)
+        except KeyError:
+            return self.build(default)
+
     @classmethod
     def build(cls, orig):
         if isinstance(orig, basestring):

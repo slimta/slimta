@@ -33,6 +33,7 @@ from contextlib import contextmanager
 from gevent import sleep, socket, ssl
 from gevent.event import AsyncResult
 from slimta.util import system
+from slimta.util.proxyproto import ProxyProtocol
 
 from .validation import ConfigValidation, ConfigValidationError
 from .config import try_configs
@@ -141,11 +142,11 @@ class SlimtaState(object):
         setup_logging(settings)
 
     def _get_client_ssl_context(self, tls_opts):
-        purpose = ssl.Purpose.CLIENT_AUTH
+        purpose = ssl.Purpose.SERVER_AUTH
         return self._get_ssl_context(purpose, tls_opts)
 
     def _get_server_ssl_context(self, tls_opts):
-        purpose = ssl.Purpose.SERVER_AUTH
+        purpose = ssl.Purpose.CLIENT_AUTH
         return self._get_ssl_context(purpose, tls_opts)
 
     def _get_ssl_context(self, purpose, tls_opts):
@@ -404,6 +405,8 @@ class SlimtaState(object):
             kwargs['hostname'] = fill_hostname_template(options.hostname)
             for listener in Listeners(options, 25):
                 new_edge = SmtpEdge(listener, queue, **kwargs)
+                if options.proxyprotocol:
+                    ProxyProtocol.mixin(new_edge)
                 new_edge.start()
                 self.edges.append(new_edge)
         elif options.type == 'http':
@@ -418,6 +421,8 @@ class SlimtaState(object):
             listener = self._get_listener(options, 8025)
             for listener in Listeners(options, 8025):
                 new_edge = WsgiEdge(queue, listener=listener, **kwargs)
+                if options.proxyprotocol:
+                    ProxyProtocol.mixin(new_edge)
                 new_edge.start()
                 self.edges.append(new_edge)
         elif options.type == 'custom':

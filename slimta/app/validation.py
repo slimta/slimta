@@ -103,6 +103,7 @@ class ConfigValidation(object):
                    'max_size': (int, False),
                    'tls': (Mapping, False),
                    'tls_immediately': (bool, False),
+                   'proxyprotocol': (bool, False),
                    'rules': (Mapping, False)}
         self._check_keys(opts, keydict, stack)
         if not self._check_ref('queue', opts.queue):

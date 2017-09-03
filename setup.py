@@ -23,7 +23,7 @@ from setuptools import setup, find_packages
 
 
 setup(name='slimta',
-      version='0.6.4',
+      version='0.6.5',
       author='Ian Good',
       author_email='icgood@gmail.com',
       description='Configurable MTA based on the python-slimta library.',
@@ -33,7 +33,7 @@ setup(name='slimta',
       namespace_packages=['slimta'],
       install_requires=['gevent >= 1.0.2',
                         'python-slimta >= 4.0.2',
-                        'python-slimta-lookup',
+                        'python-slimta-lookup >= 0.3.0',
                         'passlib',
                         'PyYAML'],
       extras_require={

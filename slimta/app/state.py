@@ -143,15 +143,19 @@ class SlimtaState(object):
 
     def _get_client_ssl_context(self, tls_opts):
         purpose = ssl.Purpose.SERVER_AUTH
-        return self._get_ssl_context(purpose, tls_opts)
+        if not tls_opts:
+            return ssl.create_default_context(purpose)
+        else:
+            return self._get_ssl_context(purpose, tls_opts)
 
     def _get_server_ssl_context(self, tls_opts):
         purpose = ssl.Purpose.CLIENT_AUTH
-        return self._get_ssl_context(purpose, tls_opts)
+        if not tls_opts:
+            return None
+        else:
+            return self._get_ssl_context(purpose, tls_opts)
 
     def _get_ssl_context(self, purpose, tls_opts):
-        if not tls_opts:
-            return ssl.create_default_context(purpose)
         key = (purpose, hash(tuple(tls_opts.iteritems())))
         if key in self.ssl_contexts:
             return self.ssl_contexts[key]

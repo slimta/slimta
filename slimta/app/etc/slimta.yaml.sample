@@ -12,7 +12,7 @@ edge:
       interface: 127.0.0.1
       port: 1025
     rules: 
-      banner: '{fqdn} ESMTP example.com Mail Delivery Agent'
+      banner: '{fqdn} ESMTP Mail Delivery Agent'
       dnsbl: zen.spamhaus.org
       only_recipients:
         - postmaster@example.com
@@ -24,7 +24,7 @@ edge:
       interface: 127.0.0.1
       port: 1587
     rules:
-      banner: '{fqdn} ESMTP example.com Mail Submission Agent'
+      banner: '{fqdn} ESMTP Mail Submission Agent'
       dnsbl: zen.spamhaus.org
       lookup_credentials:
         type: config

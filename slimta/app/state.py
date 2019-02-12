@@ -251,6 +251,9 @@ class SlimtaState(object):
         elif options.type == 'blackhole':
             from slimta.relay.blackhole import BlackholeRelay
             new_relay = BlackholeRelay()
+        elif options.type == 'pipe':
+            from slimta.relay.pipe import PipeRelay
+            new_relay = PipeRelay(options.args)
         elif options.type == 'maildrop':
             from slimta.relay.pipe import MaildropRelay
             path = options.path

@@ -199,6 +199,9 @@ class SlimtaState(object):
             if options.ipv4_only:
                 kwargs['socket_creator'] = build_ipv4_socket_creator([25])
             new_relay = MxSmtpRelay(**kwargs)
+            if 'force_mx' in options:
+                for domain, dest in options.force_mx:
+                    new_relay.force_mx(domain, dest)
         elif options.type == 'static':
             from slimta.relay.smtp.static import StaticSmtpRelay
             from .helpers import fill_hostname_template, get_relay_credentials

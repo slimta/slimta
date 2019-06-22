@@ -184,6 +184,7 @@ class ConfigValidation(object):
                    'factory': (basestring, False),
                    'ehlo_as': (basestring, False),
                    'credentials': (Mapping, False),
+                   'override_mx': (Mapping, False),
                    'ipv4_only': (bool, False)}
         self._check_keys(opts, keydict, stack)
         if opts.type == 'custom' and not opts.get('factory'):

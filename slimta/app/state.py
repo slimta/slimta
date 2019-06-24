@@ -19,18 +19,14 @@
 # THE SOFTWARE.
 #
 
-from __future__ import absolute_import
-
 import sys
 import os
 import os.path
 import warnings
 import logging
-from importlib import import_module
-from functools import wraps
 from contextlib import contextmanager
 
-from gevent import sleep, socket, ssl
+from gevent import sleep, ssl
 from gevent.event import AsyncResult
 from slimta.util import system
 from slimta.util.proxyproto import ProxyProtocol
@@ -156,7 +152,7 @@ class SlimtaState(object):
             return self._get_ssl_context(purpose, tls_opts)
 
     def _get_ssl_context(self, purpose, tls_opts):
-        key = (purpose, hash(tuple(tls_opts.iteritems())))
+        key = (purpose, hash(tuple(tls_opts.items())))
         if key in self.ssl_contexts:
             return self.ssl_contexts[key]
         ctx = ssl.create_default_context(purpose)
@@ -408,7 +404,7 @@ class SlimtaState(object):
             kwargs['context'] = self._get_server_ssl_context(options.tls)
             kwargs['tls_immediately'] = options.tls_immediately
             kwargs['validator_class'] = build_smtpedge_validators(options)
-            kwargs['auth'] = ['PLAIN', 'LOGIN']
+            kwargs['auth'] = [b'PLAIN', b'LOGIN']
             kwargs['command_timeout'] = 20.0
             kwargs['data_timeout'] = 30.0
             kwargs['max_size'] = int(options.get('max_size', 10485760))
@@ -453,9 +449,9 @@ class SlimtaState(object):
         self.start_everything()
         for edge in old_edges:
             edge.kill()
-        for queue in old_queues.itervalues():
+        for queue in old_queues.values():
             queue.kill()
-        for relay in old_relays.itervalues():
+        for relay in old_relays.values():
             relay.kill()
 
     def _handle_loop_interrupts(self, action):
@@ -467,14 +463,14 @@ class SlimtaState(object):
         self.listeners = {}
 
         if 'relay' in self.cfg:
-            for name, options in dict(self.cfg.relay).items():
+            for name, options in list(dict(self.cfg.relay).items()):
                 self._start_relay(name, options)
 
-        for name, options in dict(self.cfg.queue).items():
+        for name, options in list(dict(self.cfg.queue).items()):
             self._start_queue(name, options)
 
         if 'edge' in self.cfg:
-            for name, options in dict(self.cfg.edge).items():
+            for name, options in list(dict(self.cfg.edge).items()):
                 self._start_edge(name, options)
 
         self.cached_listeners = {}

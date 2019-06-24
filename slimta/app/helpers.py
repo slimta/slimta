@@ -19,7 +19,6 @@
 # THE SOFTWARE.
 #
 
-
 import math
 from functools import wraps
 from socket import getfqdn, gethostname
@@ -217,7 +216,7 @@ def add_queue_policies(queue, policy_options):
                 raise ConfigValidationError(msg)
         elif policy.type == 'forward':
             forward = Forward()
-            for pattern, repl in dict(policy.get('mapping', {})).items():
+            for pattern, repl in list(dict(policy.get('mapping', {})).items()):
                 forward.add_mapping(pattern, repl)
             queue.add_policy(forward)
         elif policy.type == 'spamassassin':

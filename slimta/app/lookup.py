@@ -19,10 +19,6 @@
 # THE SOFTWARE.
 #
 
-from __future__ import absolute_import
-
-from collections import Mapping
-
 from .validation import ConfigValidationError
 
 

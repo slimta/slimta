@@ -19,8 +19,6 @@
 # THE SOFTWARE.
 #
 
-from __future__ import absolute_import
-
 import os
 import os.path
 import sys
@@ -34,7 +32,7 @@ from . import __version__
 def _confirm_overwrite(path, force=False):
     if not force and os.path.exists(path):
         while True:
-            confirm = raw_input(path+' already exists, overwrite? [y/N] ')
+            confirm = input(path+' already exists, overwrite? [y/N] ')
             if confirm.lower() == 'y':
                 return True
             elif not confirm or confirm.lower() == 'n':
@@ -49,9 +47,9 @@ def _try_config_copy(etc_dir, conf_file, force):
     from pkg_resources import resource_string
     resource_name = 'etc/{0}.sample'.format(conf_file)
     contents = resource_string('slimta.app', resource_name)
-    contents = contents.replace('slimta.yaml.sample', 'slimta.yaml')
-    contents = contents.replace('logging.yaml.sample', 'logging.yaml')
-    with open(final_path, 'w') as f:
+    contents = contents.replace(b'slimta.yaml.sample', b'slimta.yaml')
+    contents = contents.replace(b'logging.yaml.sample', b'logging.yaml')
+    with open(final_path, 'wb') as f:
         f.write(contents)
 
 
@@ -61,14 +59,14 @@ def _setup_configs(args):
     if os.getuid() != 0:
         default_etc_dir = '~/.slimta/'
     if etc_dir is None:
-        etc_dir = raw_input('Where should slimta config files be placed? [{0}] '.format(default_etc_dir))
+        etc_dir = input('Where should slimta config files be placed? [{0}] '.format(default_etc_dir))
         if not etc_dir:
             etc_dir = default_etc_dir
     etc_dir = os.path.expandvars(os.path.expanduser(etc_dir))
     try:
-        os.makedirs(etc_dir, 0755)
-    except OSError as (err, msg):
-        if err != 17:
+        os.makedirs(etc_dir, 0o755)
+    except OSError as exc:
+        if exc.errno != 17:
             raise
 
     _try_config_copy(etc_dir, 'slimta.yaml', args.force)
@@ -96,7 +94,7 @@ def _setup_inits(args):
     with open(init_file, 'w') as f:
         f.write(contents)
         if args.type in ('lsb', ):
-            os.fchmod(f.fileno(), 0755)
+            os.fchmod(f.fileno(), 0o755)
 
     if args.enable:
         cmd = None
@@ -115,30 +113,28 @@ def setup():
     parser = ArgumentParser(description='Create starting configs for a slimta instance.')
     parser.add_argument('--version', action='version', version='%(prog)s '+__version__)
     parser.add_argument('-f', '--force', action='store_true', default=False,
-                           help='Force overwriting files if destination exists. The user is prompted by default.')
-    subparsers = parser.add_subparsers(help='Sub-command Help')
+                        help='Force overwriting files if destination exists. The user is prompted by default.')
+    subparsers = parser.add_subparsers(dest='action', help='Sub-command Help')
 
     config_parser = subparsers.add_parser('config', help='Setup Configuration')
     config_parser.add_argument('-e', '--etc-dir', metavar='DIR', default=None,
-                           help='Place new configs in DIR. By default, this script will prompt the user for a directory.')
-    config_parser.set_defaults(action='config')
+                               help='Place new configs in DIR. By default, this script will prompt the user for a directory.')
 
     init_parser = subparsers.add_parser('init', help='Setup Init Scripts')
     init_parser.add_argument('-t', '--type', required=True, choices=['lsb', 'systemd'],
-                           help='Type of init script to create.')
+                             help='Type of init script to create.')
     init_parser.add_argument('-n', '--name', metavar='NAME', default='slimta',
-                           help='Use NAME as the name of the service, default \'%(default)s\'.')
+                             help='Use NAME as the name of the service, default \'%(default)s\'.')
     init_parser.add_argument('-c', '--config-file', metavar='FILE', required=True,
-                           help='Use FILE as the slimta configuration file in the init script.')
+                             help='Use FILE as the slimta configuration file in the init script.')
     init_parser.add_argument('-d', '--daemon', required=True,
-                           help='Use DAEMON as the command to execute in the init script.')
+                             help='Use DAEMON as the command to execute in the init script.')
     init_parser.add_argument('--init-dir', metavar='DIR', default=None,
-                           help='Put resulting init script in DIR instead of the system default.')
+                             help='Put resulting init script in DIR instead of the system default.')
     init_parser.add_argument('--pid-dir', metavar='DIR', default='/var/run',
-                           help='Put pid files in DIR, default %(default)s.')
+                             help='Put pid files in DIR, default %(default)s.')
     init_parser.add_argument('--enable', action='store_true',
-                           help='Once the init script is created, enable it.')
-    init_parser.set_defaults(action='init')
+                             help='Once the init script is created, enable it.')
 
     args = parser.parse_args()
 
@@ -146,6 +142,8 @@ def setup():
         _setup_configs(args)
     elif args.action == 'init':
         _setup_inits(args)
+    else:
+        parser.error('Expected sub-command name')
 
 
 # vim:et:fdm=marker:sts=4:sw=4:ts=4

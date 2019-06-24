@@ -19,8 +19,6 @@
 # THE SOFTWARE.
 #
 
-from __future__ import absolute_import
-
 import socket
 
 from slimta.util import create_listeners
@@ -42,7 +40,7 @@ class Listeners(object):
 
     @classmethod
     def _get_cached_listeners(cls, options):
-        key = hash(tuple(options.iteritems()))
+        key = hash(tuple(options.items()))
         if key in cls.cache:
             listeners = cls.cache[key][:]
             for i, listener in enumerate(listeners):
@@ -56,7 +54,7 @@ class Listeners(object):
 
     @classmethod
     def _set_cached_listeners(cls, options, listeners):
-        key = hash(tuple(options.iteritems()))
+        key = hash(tuple(options.items()))
         cls.cache[key] = listeners
 
     def _get_listener_type(self, options):

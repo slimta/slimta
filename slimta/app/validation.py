@@ -19,9 +19,6 @@
 # THE SOFTWARE.
 #
 
-
-from __future__ import absolute_import
-
 from collections import Mapping, Sequence
 
 
@@ -51,7 +48,7 @@ class ConfigValidation(object):
         return name in self.cfg[section]
 
     def _check_keys(self, opts, keydict, stack, only_keys=False):
-        for k, v in opts.iteritems():
+        for k, v in opts.items():
             if k not in keydict:
                 if only_keys:
                     msg = "Unexpected key '{0}'".format(k)
@@ -63,43 +60,43 @@ class ConfigValidation(object):
                 msg = "Expected key '{0}' to be {1}".format(k, type_name)
                 raise ConfigValidationError(msg, stack)
             del keydict[k]
-        for k, v in keydict.iteritems():
+        for k, v in keydict.items():
             if v[1]:
                 msg = "Missing required key '{0}'".format(k)
                 raise ConfigValidationError(msg, stack)
 
     def _check_process(self, opts, stack):
         keydict = {'daemon': (bool, False),
-                   'pid_file': (basestring, False),
-                   'user': (basestring, False),
-                   'group': (basestring, False),
-                   'stdout': (basestring, False),
-                   'stderr': (basestring, False),
+                   'pid_file': (str, False),
+                   'user': (str, False),
+                   'group': (str, False),
+                   'stdout': (str, False),
+                   'stderr': (str, False),
                    'logging': (Mapping, False)}
         self._check_keys(opts, keydict, stack, True)
 
     def _check_lookup(self, opts, stack):
-        keydict = {'type': (basestring, True)}
+        keydict = {'type': (str, True)}
         self._check_keys(opts, keydict, stack)
 
     def _check_listener(self, opts, stack):
-        keydict = {'type': (basestring, False),
-                   'interface': (basestring, False),
+        keydict = {'type': (str, False),
+                   'interface': (str, False),
                    'port': (int, False),
-                   'path': (basestring, False),
-                   'factory': (basestring, False)}
+                   'path': (str, False),
+                   'factory': (str, False)}
         self._check_keys(opts, keydict, stack, True)
         if opts.get('type') == 'custom' and not opts.get('factory'):
             msg = "The 'factory' key must be given when using 'custom' type"
             raise ConfigValidationError(msg, stack)
 
     def _check_edge(self, opts, stack):
-        keydict = {'type': (basestring, True),
-                   'queue': (basestring, True),
-                   'factory': (basestring, False),
+        keydict = {'type': (str, True),
+                   'queue': (str, True),
+                   'factory': (str, False),
                    'listener': (Mapping, False),
                    'listeners': (Sequence, False),
-                   'hostname': (basestring, False),
+                   'hostname': (str, False),
                    'max_size': (int, False),
                    'tls': (Mapping, False),
                    'tls_immediately': (bool, False),
@@ -121,13 +118,13 @@ class ConfigValidation(object):
         elif 'listener' in opts:
             self._check_listener(opts.listener, stack+['listener'])
         if 'tls' in opts:
-            tls_keydict = {'certfile': (basestring, True),
-                           'keyfile': (basestring, True),
-                           'ca_certs': (basestring, False)}
+            tls_keydict = {'certfile': (str, True),
+                           'keyfile': (str, True),
+                           'ca_certs': (str, False)}
             self._check_keys(opts.tls, tls_keydict, stack+['tls'])
         if 'rules' in opts:
-            rules_keydict = {'banner': (basestring, False),
-                             'dnsbl': (basestring, False),
+            rules_keydict = {'banner': (str, False),
+                             'dnsbl': (str, False),
                              'dnsbl': (Sequence, False),
                              'reject_spf': (Sequence, False),
                              'lookup_senders': (Mapping, False),
@@ -150,10 +147,10 @@ class ConfigValidation(object):
                                    stack+['lookup_credentials'])
 
     def _check_queue(self, opts, stack):
-        keydict = {'type': (basestring, True),
-                   'relay': (basestring, False),
-                   'factory': (basestring, False),
-                   'bounce_queue': (basestring, False),
+        keydict = {'type': (str, True),
+                   'relay': (str, False),
+                   'factory': (str, False),
+                   'bounce_queue': (str, False),
                    'retry': (Mapping, False),
                    'policies': (Sequence, False)}
         self._check_keys(opts, keydict, stack)
@@ -173,16 +170,16 @@ class ConfigValidation(object):
             if not isinstance(p, Mapping):
                 msg = 'Expected dictionary'
                 raise ConfigValidationError(msg, mystack)
-            self._check_keys(p, {'type': (basestring, True)}, mystack)
+            self._check_keys(p, {'type': (str, True)}, mystack)
         if 'retry' in opts:
             retry_keydict = {'maximum': (int, False),
-                             'delay': (basestring, False)}
+                             'delay': (str, False)}
             self._check_keys(opts.retry, retry_keydict, stack+['retry'], True)
 
     def _check_relay(self, opts, stack):
-        keydict = {'type': (basestring, True),
-                   'factory': (basestring, False),
-                   'ehlo_as': (basestring, False),
+        keydict = {'type': (str, True),
+                   'factory': (str, False),
+                   'ehlo_as': (str, False),
                    'credentials': (Mapping, False),
                    'override_mx': (Mapping, False),
                    'ipv4_only': (bool, False)}
@@ -191,8 +188,8 @@ class ConfigValidation(object):
             msg = "The 'factory' key must be given when using 'custom' type"
             raise ConfigValidationError(msg, stack)
         if 'credentials' in opts:
-            creds_keydict = {'username': (basestring, True),
-                             'password': (basestring, True)}
+            creds_keydict = {'username': (str, True),
+                             'password': (str, True)}
             self._check_keys(opts.credentials, creds_keydict,
                              stack+['credentials'], True)
 
@@ -207,18 +204,18 @@ class ConfigValidation(object):
                    'queue': (Mapping, True)}
         self._check_keys(self.cfg, keydict, stack)
 
-        for process, opts in self.cfg.process.iteritems():
+        for process, opts in self.cfg.process.items():
             self._check_process(opts, stack+['process', process])
 
         if 'edge' in self.cfg:
-            for edge, opts in self.cfg.edge.iteritems():
+            for edge, opts in self.cfg.edge.items():
                 self._check_edge(opts, stack+['edge', edge])
 
-        for queue, opts in self.cfg.queue.iteritems():
+        for queue, opts in self.cfg.queue.items():
             self._check_queue(opts, stack+['queue', queue])
 
         if 'relay' in self.cfg:
-            for relay, opts in self.cfg.relay.iteritems():
+            for relay, opts in self.cfg.relay.items():
                 self._check_relay(opts, stack+['relay', relay])
 
         if program not in self.cfg.process:

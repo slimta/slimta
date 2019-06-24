@@ -19,8 +19,6 @@
 # THE SOFTWARE.
 #
 
-from __future__ import absolute_import
-
 import os
 import os.path
 from contextlib import contextmanager
@@ -60,13 +58,13 @@ class _ConfigDict(dict):
 
     @classmethod
     def build(cls, orig):
-        if isinstance(orig, basestring):
+        if isinstance(orig, str):
             return orig
         if isinstance(orig, Sequence):
             return [cls.build(item) for item in orig]
         elif isinstance(orig, Mapping):
             new = cls()
-            for key, value in orig.iteritems():
+            for key, value in orig.items():
                 new[key] = cls.build(value)
             return new
         return orig

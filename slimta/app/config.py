@@ -79,7 +79,16 @@ def _load_yaml(filename):
         with open(inc_file, 'r') as inc_fobj:
             return yaml.load(inc_fobj, ConfigLoader)
 
+    def yaml_getenv(loader, node):
+        name = loader.construct_scalar(node) if loader else node
+        try:
+            return os.environ[name]
+        except KeyError as exc:
+            raise EnvironmentError(
+                f'Missing environment variable: {name}') from exc
+
     ConfigLoader.add_constructor('!include', yaml_include)
+    ConfigLoader.add_constructor('!env', yaml_getenv)
     loaded = yaml_include(None, filename)
     return _ConfigDict.build(loaded)
 

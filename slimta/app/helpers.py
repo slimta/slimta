@@ -20,8 +20,8 @@
 #
 
 import math
+import socket
 from functools import wraps
-from socket import getfqdn, gethostname
 
 from passlib.apps import ldap_context
 
@@ -226,8 +226,8 @@ def add_queue_policies(queue, policy_options):
 def fill_hostname_template(val):
     if not val:
         return val
-    return val.format(fqdn=getfqdn(),
-                      hostname=gethostname())
+    return val.format(fqdn=socket.getfqdn(),
+                      hostname=socket.gethostname())
 
 
 def build_backoff_function(retry):

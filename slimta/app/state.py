@@ -22,6 +22,7 @@
 import sys
 import os
 import os.path
+import socket
 import warnings
 import logging
 from contextlib import contextmanager
@@ -101,6 +102,15 @@ class SlimtaState(object):
             else:
                 logging.getLogger('slimta.app').error(err)
                 sys.exit(2)
+
+    def override_hostname(self):
+        process_options = self.cfg.process[self.program]
+        hostname = process_options.hostname
+        fqdn = process_options.fqdn
+        if hostname is not None:
+            socket.gethostname = lambda: hostname
+        if fqdn is not None:
+            socket.getfqdn = lambda: fqdn
 
     def drop_privileges(self):
         process_options = self.cfg.process[self.program]
@@ -476,6 +486,7 @@ class SlimtaState(object):
         self.cached_listeners = {}
 
     def loop(self):
+        self.override_hostname()
         self.start_everything()
 
         self.setup_logging()

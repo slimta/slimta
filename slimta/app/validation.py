@@ -67,6 +67,8 @@ class ConfigValidation(object):
 
     def _check_process(self, opts, stack):
         keydict = {'daemon': (bool, False),
+                   'hostname': (str, False),
+                   'fqdn': (str, False),
                    'pid_file': (str, False),
                    'user': (str, False),
                    'group': (str, False),

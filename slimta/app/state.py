@@ -119,20 +119,22 @@ class SlimtaState(object):
             else:
                 warnings.warn('Only superuser can drop privileges.')
 
+    @property
+    def is_daemon(self):
+        daemon = self.cfg.process[self.program].daemon
+        attached = self.args.attached
+        return attached is False or (attached is None and daemon)
+
     def redirect_streams(self):
-        process_options = self.cfg.process[self.program]
-        flag = process_options.daemon
-        if flag and not self.args.attached:
+        if self.is_daemon:
+            process_options = self.cfg.process[self.program]
             so = process_options.stdout
             se = process_options.stderr
             si = process_options.stdin
             system.redirect_stdio(so, se, si)
 
     def daemonize(self):
-        flag = self.cfg.process[self.program].daemon
-        if self.args.attached is None and flag:
-            system.daemonize()
-        elif not self.args.attached:
+        if self.is_daemon:
             system.daemonize()
 
     def create_pid_file(self):

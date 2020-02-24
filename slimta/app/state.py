@@ -51,7 +51,7 @@ class SlimtaState(object):
                             '/etc/slimta/slimta.yaml']
 
     def __init__(self, args):
-        self.program = os.path.basename(sys.argv[0])
+        self.program = args.process_name
         self.args = args
         self.cfg = None
         self.loop_interrupt = AsyncResult()
@@ -79,9 +79,6 @@ class SlimtaState(object):
             signal.signal(SIGHUP, old_hup)
 
     def load_config(self, argparser=None):
-        if self.args.process_name:
-            self.program = self.args.process_name
-
         files = self._global_config_files
         if self.args.config:
             files = [self.args.config]
@@ -186,6 +183,8 @@ class SlimtaState(object):
         return ctx
 
     def _start_relay(self, name, options=None):
+        if self.args.no_relay:
+            return None
         if name in self.relays:
             return self.relays[name]
         if not options:
@@ -401,9 +400,10 @@ class SlimtaState(object):
         return new_queue
 
     def _start_edge(self, name, options=None):
+        if self.args.no_edge:
+            return None
         if not options:
             options = getattr(self.cfg.edge, name)
-        new_edges = []
         queue_name = options.queue
         queue = self._start_queue(queue_name)
         if options.type == 'smtp':

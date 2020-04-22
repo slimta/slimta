@@ -136,6 +136,7 @@ class ConfigValidation(object):
                              'regex_senders': (Sequence, False),
                              'regex_recipients': (Sequence, False),
                              'lookup_credentials': (Mapping, False),
+                             'password_hash': (str, False),
                              'reject_spam': (Mapping, False)}
             self._check_keys(opts.rules, rules_keydict, stack+['rules'], True)
             if 'lookup_sender' in opts.rules:

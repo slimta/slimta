@@ -23,8 +23,6 @@ import math
 import socket
 from functools import wraps
 
-from passlib.apps import ldap_context
-
 from slimta.edge.smtp import SmtpValidators
 from slimta.edge.wsgi import WsgiValidators, WsgiResponse
 from slimta.util.dnsbl import check_dnsbl, DnsBlocklistGroup
@@ -38,7 +36,7 @@ from slimta.policy.spamassassin import SpamAssassin
 from slimta.policy.headers import AddDateHeader, AddMessageIdHeader, \
                                   AddReceivedHeader
 
-from .lookup import load_lookup
+from .lookup import load_lookup, get_hash_context
 from .validation import ConfigValidationError
 
 
@@ -67,6 +65,7 @@ class RuleHelpers(object):
                                              'only_recipients',
                                              'regex_recipients')
         self.lookup_creds = load_lookup(rules.lookup_credentials)
+        self.password_hash = get_hash_context(rules.password_hash)
         self.reject_spf = rules.reject_spf
         self.scanner = self._get_scanner(rules.reject_spam)
 
@@ -97,7 +96,7 @@ class RuleHelpers(object):
                                                authzid=creds.authzid)
         if not ret or 'password' not in ret:
             return False
-        if not ldap_context.verify(creds.secret, ret['password']):
+        if not self.password_hash.verify(creds.secret, ret['password']):
             return False
         return True
 

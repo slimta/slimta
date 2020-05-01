@@ -190,6 +190,13 @@ class ConfigValidation(object):
         if opts.type == 'custom' and not opts.get('factory'):
             msg = "The 'factory' key must be given when using 'custom' type"
             raise ConfigValidationError(msg, stack)
+        if opts.type == 'pipe':
+            pipe_keydict = {'args': (list, True)}
+            self._check_keys(opts, pipe_keydict, stack)
+            for arg in opts.args:
+                if not isinstance(arg, str):
+                    msg = "All 'args' must be strings"
+                    raise ConfigValidationError(msg, stack+['args'])
         if 'credentials' in opts:
             creds_keydict = {'username': (str, True),
                              'password': (str, True)}

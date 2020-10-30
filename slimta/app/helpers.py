@@ -26,6 +26,7 @@ from functools import wraps
 from slimta.edge.smtp import SmtpValidators
 from slimta.edge.wsgi import WsgiValidators, WsgiResponse
 from slimta.util.dnsbl import check_dnsbl, DnsBlocklistGroup
+from slimta.util.spf import EnforceSpf
 from slimta.lookup.drivers.dict import DictLookup
 from slimta.lookup.drivers.regex import RegexLookup
 from slimta.lookup.policy import LookupPolicy
@@ -125,7 +126,6 @@ class RuleHelpers(object):
 
     def get_mail_decorator(self):
         if self.reject_spf:
-            from slimta.spf import EnforceSpf
             spf = EnforceSpf()
             msg = '5.7.1 Access denied; {reason}'
             for spf_type in self.reject_spf:

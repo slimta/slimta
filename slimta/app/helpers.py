@@ -35,7 +35,7 @@ from slimta.policy.forward import Forward
 from slimta.policy.split import RecipientSplit, RecipientDomainSplit
 from slimta.policy.spamassassin import SpamAssassin
 from slimta.policy.headers import AddDateHeader, AddMessageIdHeader, \
-                                  AddReceivedHeader
+    AddReceivedHeader
 
 from .lookup import load_lookup, get_hash_context
 from .validation import ConfigValidationError
@@ -147,23 +147,29 @@ class RuleHelpers(object):
 
 def build_smtpedge_validators(options):
     rules = RuleHelpers(options)
+
     class CustomValidators(SmtpValidators):
         @rules.get_banner_decorator()
         def handle_banner(self, reply, address):
             rules.set_banner_message(reply)
+
         def handle_auth(self, reply, creds):
             if not rules.check_credentials(creds):
                 reply.code = '535'
                 reply.message = '5.7.8 Authentication credentials invalid'
+
         @rules.get_mail_decorator()
         def handle_mail(self, reply, sender, params):
             if not rules.is_sender_ok(self, sender):
                 reply.code = '550'
                 reply.message = '5.7.1 Sender <{0}> Not allowed'.format(sender)
+
         def handle_rcpt(self, reply, rcpt, params):
             if not rules.is_recipient_ok(rcpt):
                 reply.code = '550'
-                reply.message = '5.7.1 Recipient <{0}> Not allowed'.format(rcpt)
+                reply.message = '5.7.1 Recipient <{0}> Not allowed'.format(
+                    rcpt)
+
         def handle_have_data(self, reply, data):
             if rules.reject_spam(data):
                 reply.code = '554'
@@ -173,6 +179,7 @@ def build_smtpedge_validators(options):
 
 def build_wsgiedge_validators(options):
     rules = RuleHelpers(options)
+
     class CustomValidators(WsgiValidators):
         def validate_sender(self, sender):
             if not rules.is_sender_ok(self, sender):
@@ -180,6 +187,7 @@ def build_wsgiedge_validators(options):
                 smtp_message = '5.7.1 Sender <{0}> Not allowed'.format(sender)
                 reply = '{0}; message="{1}"'.format(smtp_code, smtp_message)
                 raise WsgiResponse('403 Forbidden', [('X-Smtp-Reply', reply)])
+
         def validate_recipient(self, rcpt):
             if not rules.is_recipient_ok(rcpt):
                 smtp_code = '550'
@@ -237,6 +245,7 @@ def build_backoff_function(retry):
     maximum = int(retry.get('maximum', 0))
     delay = retry.get('delay', '300')
     delay_func = eval('lambda x: '+delay, math.__dict__)
+
     def backoff(envelope, attempts):
         if attempts > maximum:
             return None

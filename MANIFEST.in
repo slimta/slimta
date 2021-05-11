@@ -1,0 +1,3 @@
+include README.md LICENSE.md
+recursive-include slimta/app/etc *.yaml.sample
+recursive-include slimta/app/etc init-*.tmpl

@@ -51,7 +51,7 @@ def _load_sqlite3_lookup(options):
         if opt not in options:
             msg = 'sqlite3 lookup requires {0} option'.format(opt)
             raise ConfigValidationError(msg)
-    return SQLite3Lookup(opt.database, opt.query)
+    return SQLite3Lookup(options.database, options.query)
 
 
 def _load_dict_lookup(options):

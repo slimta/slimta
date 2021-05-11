@@ -19,7 +19,7 @@
 # THE SOFTWARE.
 #
 
-from collections import Mapping, Sequence
+from collections.abc import Mapping, Sequence
 
 
 class ConfigValidationError(Exception):
@@ -126,8 +126,7 @@ class ConfigValidation(object):
             self._check_keys(opts.tls, tls_keydict, stack+['tls'])
         if 'rules' in opts:
             rules_keydict = {'banner': (str, False),
-                             'dnsbl': (str, False),
-                             'dnsbl': (Sequence, False),
+                             'dnsbl': ((str, Sequence), False),
                              'reject_spf': (Sequence, False),
                              'lookup_senders': (Mapping, False),
                              'lookup_recipients': (Mapping, False),

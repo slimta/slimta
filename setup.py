@@ -1,4 +1,4 @@
-# Copyright (c) 2012 Ian C. Good
+# Copyright (c) 2021 Ian C. Good
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -21,21 +21,30 @@
 
 from setuptools import setup, find_packages
 
+with open('README.md') as f:
+    readme = f.read()
+
+with open('LICENSE.md') as f:
+    license = f.read()
 
 setup(name='slimta',
-      version='0.7.8',
+      version='0.7.9',
       author='Ian Good',
-      author_email='icgood@gmail.com',
+      author_email='ian@icgood.net',
       description='Configurable MTA based on the python-slimta library.',
+      long_description=readme + license,
+      long_description_content_type='text/markdown',
       license='MIT',
       url='http://slimta.org/',
+      python_requires='~=3.9',
+      include_package_data=True,
       packages=find_packages(),
       namespace_packages=['slimta'],
-      install_requires=['python-slimta[spf] >= 4.1.0', 'passlib', 'PyYAML'],
+      install_requires=['python-slimta[spf] ~= 4.2', 'passlib', 'PyYAML'],
+      extras_require={'optional': ['python-slimta[redis,aws,disk]']},
       entry_points={'console_scripts': [
               'slimta = slimta.app.main:main',
               'slimta-setup = slimta.app.setup:setup']},
-      package_data={'slimta.app': ['etc/*.yaml.sample', 'etc/init-*.tmpl']},
       classifiers=['Development Status :: 3 - Alpha',
                    'Topic :: Communications :: Email :: Mail Transport Agents',
                    'Intended Audience :: Information Technology',

@@ -26,6 +26,7 @@ import socket
 import warnings
 import logging
 from contextlib import contextmanager
+from functools import partial
 
 from gevent import sleep, ssl
 from gevent.event import AsyncResult
@@ -41,8 +42,9 @@ from .logging import setup_logging
 try:
     from slimta.util import build_ipv4_socket_creator
 except ImportError as exc:
-    def build_ipv4_socket_creator(*args, **kwargs):
+    def rethrow_importerror(exc, *args, **kwargs):
         raise exc
+    build_ipv4_socket_creator = partial(rethrow_importerror, exc)
 
 
 class SlimtaState(object):
@@ -66,8 +68,10 @@ class SlimtaState(object):
     def _with_sighandlers(self):
         from signal import SIGTERM, SIGHUP, SIG_DFL
         from gevent import signal
+
         def handle_term(signum, frame):
             sys.exit(0)
+
         def handle_hup(signum, frame):
             self.loop_interrupt.set('reload')
         old_term = signal.signal(SIGTERM, handle_term) or SIG_DFL
@@ -291,7 +295,7 @@ class SlimtaState(object):
         relay = self._start_relay(relay_name) if relay_name else None
         bounce_queue_name = options.get('bounce_queue', name)
         bounce_queue = self._start_queue(bounce_queue_name) \
-                       if bounce_queue_name != name else None
+            if bounce_queue_name != name else None
         if options.type == 'memory':
             from slimta.queue import Queue
             from slimta.queue.dict import DictStorage
@@ -336,7 +340,7 @@ class SlimtaState(object):
             from slimta.queue import Queue
             from slimta.cloudstorage import CloudStorage
             from slimta.cloudstorage.rackspace import RackspaceCloudAuth, \
-                    RackspaceCloudFiles, RackspaceCloudQueues
+                RackspaceCloudFiles, RackspaceCloudQueues
             credentials = {'username': options.username}
             if 'password' in options:
                 credentials['password'] = options.password
@@ -349,13 +353,14 @@ class SlimtaState(object):
             if 'endpoint' in options:
                 auth_kwargs['endpoint'] = options.endpoint
             auth = RackspaceCloudAuth(credentials, **auth_kwargs)
-            cloud_files = RackspaceCloudFiles(auth,
-                    container=options.container_name, timeout=20.0)
+            cloud_files = RackspaceCloudFiles(
+                    auth, container=options.container_name, timeout=20.0)
             cloud_queues = None
             if 'queue_name' in options:
-                cloud_queues = RackspaceCloudQueues(auth,
-                        queue_name=options.queue_name, timeout=10.0)
+                cloud_queues = RackspaceCloudQueues(
+                    auth, queue_name=options.queue_name, timeout=10.0)
             store = CloudStorage(cloud_files, cloud_queues)
+            backoff = build_backoff_function(options.retry)
             new_queue = Queue(store, relay, backoff=backoff,
                               bounce_queue=bounce_queue)
             new_queue.start()
@@ -363,7 +368,7 @@ class SlimtaState(object):
             from slimta.queue import Queue
             from slimta.cloudstorage import CloudStorage
             from slimta.cloudstorage.aws import SimpleStorageService, \
-                    SimpleQueueService
+                SimpleQueueService
             import boto
             if 'access_key_id' in options:
                 from boto.s3.connection import S3Connection
@@ -378,14 +383,15 @@ class SlimtaState(object):
                 from boto.sqs import connect_to_region
                 region = options.get('queue_region', 'us-west-2')
                 if 'access_key_id' in options:
-                    sqs_conn = connect_to_region(region,
-                            aws_access_key_id=options.access_key_id,
-                            aws_secret_access_key=options.secret_access_key)
+                    sqs_conn = connect_to_region(
+                        region, aws_access_key_id=options.access_key_id,
+                        aws_secret_access_key=options.secret_access_key)
                 else:
                     sqs_conn = connect_to_region(region)
                 sqs_queue = sqs_conn.create_queue(options.queue_name)
                 sqs = SimpleQueueService(sqs_queue, timeout=10.0)
             store = CloudStorage(s3, sqs)
+            backoff = build_backoff_function(options.retry)
             new_queue = Queue(store, relay, backoff=backoff,
                               bounce_queue=bounce_queue)
             new_queue.start()
@@ -436,7 +442,6 @@ class SlimtaState(object):
             kwargs['validator_class'] = build_wsgiedge_validators(options)
             kwargs['uri_pattern'] = options.uri
             kwargs['context'] = self._get_server_ssl_context(options.tls)
-            listener = self._get_listener(options, 8025)
             for listener in Listeners(options, 8025):
                 new_edge = WsgiEdge(queue, listener=listener, **kwargs)
                 if options.proxyprotocol:

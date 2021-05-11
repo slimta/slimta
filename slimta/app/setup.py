@@ -59,7 +59,9 @@ def _setup_configs(args):
     if os.getuid() != 0:
         default_etc_dir = '~/.slimta/'
     if etc_dir is None:
-        etc_dir = input('Where should slimta config files be placed? [{0}] '.format(default_etc_dir))
+        etc_dir = input(
+            'Where should slimta config files be placed? '
+            '[{0}] '.format(default_etc_dir))
         if not etc_dir:
             etc_dir = default_etc_dir
     etc_dir = os.path.expandvars(os.path.expanduser(etc_dir))
@@ -77,6 +79,8 @@ def _setup_inits(args):
     from pkg_resources import resource_string
     resource_name = 'etc/init-{0}.tmpl'.format(args.type)
     template_str = resource_string('slimta.app', resource_name)
+    if isinstance(template_str, bytes):
+        template_str = template_str.decode('ascii')
     tmpl = Template(template_str)
     pid_file = os.path.join(args.pid_dir, '{0}.pid'.format(args.name))
     contents = tmpl.safe_substitute(service_name=args.name,
@@ -110,31 +114,43 @@ def _setup_inits(args):
 
 
 def setup():
-    parser = ArgumentParser(description='Create starting configs for a slimta instance.')
-    parser.add_argument('--version', action='version', version='%(prog)s '+__version__)
+    parser = ArgumentParser(
+        description='Create starting configs for a slimta instance.')
+    parser.add_argument('--version', action='version',
+                        version='%(prog)s '+__version__)
     parser.add_argument('-f', '--force', action='store_true', default=False,
-                        help='Force overwriting files if destination exists. The user is prompted by default.')
+                        help='Force overwriting files if destination exists. '
+                        'The user is prompted by default.')
     subparsers = parser.add_subparsers(dest='action', help='Sub-command Help')
 
     config_parser = subparsers.add_parser('config', help='Setup Configuration')
     config_parser.add_argument('-e', '--etc-dir', metavar='DIR', default=None,
-                               help='Place new configs in DIR. By default, this script will prompt the user for a directory.')
+                               help='Place new configs in DIR. By default, '
+                               'this script will prompt the user for a '
+                               'directory.')
 
     init_parser = subparsers.add_parser('init', help='Setup Init Scripts')
-    init_parser.add_argument('-t', '--type', required=True, choices=['lsb', 'systemd'],
+    init_parser.add_argument('-t', '--type', required=True,
+                             choices=['lsb', 'systemd'],
                              help='Type of init script to create.')
     init_parser.add_argument('-n', '--name', metavar='NAME', default='slimta',
-                             help='Use NAME as the name of the service, default \'%(default)s\'.')
-    init_parser.add_argument('-c', '--config-file', metavar='FILE', required=True,
-                             help='Use FILE as the slimta configuration file in the init script.')
+                             help='Use NAME as the name of the service, '
+                             'default \'%(default)s\'.')
+    init_parser.add_argument('-c', '--config-file', metavar='FILE',
+                             required=True,
+                             help='Use FILE as the slimta configuration file '
+                             'in the init script.')
     init_parser.add_argument('-d', '--daemon', required=True,
-                             help='Use DAEMON as the command to execute in the init script.')
+                             help='Use DAEMON as the command to execute in '
+                             'the init script.')
     init_parser.add_argument('--init-dir', metavar='DIR', default=None,
-                             help='Put resulting init script in DIR instead of the system default.')
+                             help='Put resulting init script in DIR instead '
+                             'of the system default.')
     init_parser.add_argument('--pid-dir', metavar='DIR', default='/var/run',
                              help='Put pid files in DIR, default %(default)s.')
     init_parser.add_argument('--enable', action='store_true',
-                             help='Once the init script is created, enable it.')
+                             help='Once the init script is created, '
+                             'enable it.')
 
     args = parser.parse_args()
 

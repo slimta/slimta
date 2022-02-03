@@ -53,7 +53,7 @@ def _try_config_copy(etc_dir, conf_file, force):
         f.write(contents)
 
 
-def _setup_configs(args):
+def _setup_configs(parser, args):
     etc_dir = args.etc_dir
     default_etc_dir = '/etc/slimta'
     if os.getuid() != 0:
@@ -75,7 +75,7 @@ def _setup_configs(args):
     _try_config_copy(etc_dir, 'logging.yaml', args.force)
 
 
-def _setup_inits(args):
+def _setup_inits(parser, args):
     from pkg_resources import resource_string
     resource_name = 'etc/init-{0}.tmpl'.format(args.type)
     template_str = resource_string('slimta.app', resource_name)
@@ -93,6 +93,8 @@ def _setup_inits(args):
     elif args.type == 'lsb':
         init_dir = args.init_dir or '/etc/init.d'
         init_file = os.path.join(init_dir, args.name)
+    else:
+        return parser.error(f'Invalid init script type: {args.type}')
     if not _confirm_overwrite(init_file, args.force):
         return
     with open(init_file, 'w') as f:
@@ -155,9 +157,9 @@ def setup():
     args = parser.parse_args()
 
     if args.action == 'config':
-        _setup_configs(args)
+        _setup_configs(parser, args)
     elif args.action == 'init':
-        _setup_inits(args)
+        _setup_inits(parser, args)
     else:
         parser.error('Expected sub-command name')
 

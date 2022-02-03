@@ -203,7 +203,8 @@ class ConfigValidation(object):
                              stack+['credentials'], True)
 
     def _check_toplevel(self, stack, program):
-        if not isinstance(self.cfg, Mapping):
+        _cfg = self.cfg
+        if not isinstance(_cfg, Mapping):
             msg = 'Expected mapping'
             raise ConfigValidationError(msg, stack)
 

@@ -24,6 +24,6 @@ jobs:
     - name: Lint with flake8
       run: |
         flake8 slimta
-    - name: Type checking with pytype
+    - name: Type checking with pyright
       run: |
-        pytype -k
+        pyright slimta

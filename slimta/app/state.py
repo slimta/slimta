@@ -103,8 +103,10 @@ class SlimtaState(object):
             else:
                 logging.getLogger('slimta.app').error(err)
                 sys.exit(2)
+        assert self.cfg is not None
 
     def override_hostname(self):
+        assert self.cfg is not None and self.cfg.process is not None
         process_options = self.cfg.process[self.program]
         hostname = process_options.hostname
         fqdn = process_options.fqdn
@@ -114,6 +116,7 @@ class SlimtaState(object):
             socket.getfqdn = lambda: fqdn
 
     def drop_privileges(self):
+        assert self.cfg is not None and self.cfg.process is not None
         process_options = self.cfg.process[self.program]
         user = process_options.user
         group = process_options.group
@@ -125,11 +128,13 @@ class SlimtaState(object):
 
     @property
     def is_daemon(self):
+        assert self.cfg is not None and self.cfg.process is not None
         daemon = self.cfg.process[self.program].daemon
         attached = self.args.attached
         return attached is False or (attached is None and daemon)
 
     def redirect_streams(self):
+        assert self.cfg is not None and self.cfg.process is not None
         if self.is_daemon:
             process_options = self.cfg.process[self.program]
             so = process_options.stdout
@@ -142,11 +147,13 @@ class SlimtaState(object):
             system.daemonize()
 
     def create_pid_file(self):
+        assert self.cfg is not None and self.cfg.process is not None
         args_pid_file = self.args.pid_file
         cfg_pid_file = self.cfg.process[self.program].pid_file
         return system.PidFile(args_pid_file or cfg_pid_file)
 
     def setup_logging(self):
+        assert self.cfg is not None and self.cfg.process is not None
         settings = self.cfg.process[self.program].logging
         setup_logging(settings)
 
@@ -194,6 +201,7 @@ class SlimtaState(object):
         if name in self.relays:
             return self.relays[name]
         if not options:
+            assert self.cfg is not None and self.cfg.relay is not None
             options = getattr(self.cfg.relay, name)
         new_relay = None
         if options.type == 'mx':
@@ -208,7 +216,8 @@ class SlimtaState(object):
             kwargs['ehlo_as'] = fill_hostname_template(options.ehlo_as)
             kwargs['context'] = self._get_client_ssl_context(options.tls)
             if options.ipv4_only:
-                kwargs['socket_creator'] = build_ipv4_socket_creator([25])
+                socket_creator = build_ipv4_socket_creator([25])
+                kwargs['socket_creator'] = socket_creator  # type: ignore
             new_relay = MxSmtpRelay(**kwargs)
             if 'force_mx' in options:
                 for domain, dest in options.force_mx:
@@ -230,8 +239,8 @@ class SlimtaState(object):
                 credentials = get_relay_credentials(options.credentials)
                 kwargs['credentials'] = credentials
             if options.ipv4_only:
-                kwargs['socket_creator'] = \
-                    build_ipv4_socket_creator([kwargs['port']])
+                socket_creator = build_ipv4_socket_creator([kwargs['port']])
+                kwargs['socket_creator'] = socket_creator  # type: ignore
             new_relay = StaticSmtpRelay(**kwargs)
         elif options.type == 'lmtp':
             from slimta.relay.smtp.static import StaticLmtpRelay
@@ -250,8 +259,8 @@ class SlimtaState(object):
                 credentials = get_relay_credentials(options.credentials)
                 kwargs['credentials'] = credentials
             if options.ipv4_only:
-                kwargs['socket_creator'] = \
-                    build_ipv4_socket_creator([kwargs['port']])
+                socket_creator = build_ipv4_socket_creator([kwargs['port']])
+                kwargs['socket_creator'] = socket_creator  # type: ignore
             new_relay = StaticLmtpRelay(**kwargs)
         elif options.type == 'http':
             from slimta.relay.http import HttpRelay
@@ -288,6 +297,7 @@ class SlimtaState(object):
         if name in self.queues:
             return self.queues[name]
         if not options:
+            assert self.cfg is not None and self.cfg.queue is not None
             options = getattr(self.cfg.queue, name)
         from .helpers import add_queue_policies, build_backoff_function
         new_queue = None
@@ -332,34 +342,6 @@ class SlimtaState(object):
             if 'prefix' in options:
                 kwargs['prefix'] = options.prefix
             store = RedisStorage(**kwargs)
-            backoff = build_backoff_function(options.retry)
-            new_queue = Queue(store, relay, backoff=backoff,
-                              bounce_queue=bounce_queue)
-            new_queue.start()
-        elif options.type == 'rackspace':
-            from slimta.queue import Queue
-            from slimta.cloudstorage import CloudStorage
-            from slimta.cloudstorage.rackspace import RackspaceCloudAuth, \
-                RackspaceCloudFiles, RackspaceCloudQueues
-            credentials = {'username': options.username}
-            if 'password' in options:
-                credentials['password'] = options.password
-            if 'api_key' in options:
-                credentials['api_key'] = options.api_key
-            if 'tenant_id' in options:
-                credentials['tenant_id'] = options.tenant_id
-            auth_kwargs = {'region': options.region,
-                           'timeout': 10.0}
-            if 'endpoint' in options:
-                auth_kwargs['endpoint'] = options.endpoint
-            auth = RackspaceCloudAuth(credentials, **auth_kwargs)
-            cloud_files = RackspaceCloudFiles(
-                    auth, container=options.container_name, timeout=20.0)
-            cloud_queues = None
-            if 'queue_name' in options:
-                cloud_queues = RackspaceCloudQueues(
-                    auth, queue_name=options.queue_name, timeout=10.0)
-            store = CloudStorage(cloud_files, cloud_queues)
             backoff = build_backoff_function(options.retry)
             new_queue = Queue(store, relay, backoff=backoff,
                               bounce_queue=bounce_queue)
@@ -411,6 +393,7 @@ class SlimtaState(object):
         if self.args.no_edge:
             return None
         if not options:
+            assert self.cfg is not None and self.cfg.edge is not None
             options = getattr(self.cfg.edge, name)
         queue_name = options.queue
         queue = self._start_queue(queue_name)
@@ -478,15 +461,19 @@ class SlimtaState(object):
     def start_everything(self):
         self.cached_listeners = self.listeners.copy()
         self.listeners = {}
+        assert self.cfg is not None and self.cfg.queue is not None
 
         if 'relay' in self.cfg:
+            assert self.cfg.relay is not None
             for name, options in list(dict(self.cfg.relay).items()):
                 self._start_relay(name, options)
 
+        assert self.cfg is not None and self.cfg.queue is not None
         for name, options in list(dict(self.cfg.queue).items()):
             self._start_queue(name, options)
 
         if 'edge' in self.cfg:
+            assert self.cfg.edge is not None
             for name, options in list(dict(self.cfg.edge).items()):
                 self._start_edge(name, options)
 

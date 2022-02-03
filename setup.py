@@ -19,7 +19,7 @@
 # THE SOFTWARE.
 #
 
-from setuptools import setup, find_packages
+from setuptools import setup, find_namespace_packages
 
 with open('README.md') as f:
     readme = f.read()
@@ -28,7 +28,7 @@ with open('LICENSE.md') as f:
     license = f.read()
 
 setup(name='slimta',
-      version='0.7.9',
+      version='0.8.0',
       author='Ian Good',
       author_email='ian@icgood.net',
       description='Configurable MTA based on the python-slimta library.',
@@ -38,10 +38,10 @@ setup(name='slimta',
       url='http://slimta.org/',
       python_requires='~=3.9',
       include_package_data=True,
-      packages=find_packages(),
-      namespace_packages=['slimta'],
-      install_requires=['python-slimta[spf] ~= 4.2', 'passlib', 'PyYAML'],
-      extras_require={'optional': ['python-slimta[redis,aws,disk]']},
+      packages=find_namespace_packages(include=['slimta.*']),
+      install_requires=['python-slimta[spf] ~= 5.0', 'passlib', 'PyYAML'],
+      extras_require={
+          'optional': ['python-slimta[redis,aws,disk] ~= 5.0']},
       entry_points={'console_scripts': [
               'slimta = slimta.app.main:main',
               'slimta-setup = slimta.app.setup:setup']},

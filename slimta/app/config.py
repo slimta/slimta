@@ -22,7 +22,7 @@
 import os
 import os.path
 from contextlib import contextmanager
-from collections import Mapping, Sequence
+from collections.abc import Mapping, Sequence
 
 import yaml
 
@@ -54,20 +54,24 @@ class _ConfigDict(dict):
         try:
             return super(_ConfigDict, self).__getitem__(key)
         except KeyError:
-            return self.build(default)
+            return self._build(default)
 
     @classmethod
-    def build(cls, orig):
+    def _build(cls, orig):
         if isinstance(orig, str):
             return orig
         if isinstance(orig, Sequence):
-            return [cls.build(item) for item in orig]
+            return [cls._build(item) for item in orig]
         elif isinstance(orig, Mapping):
-            new = cls()
-            for key, value in orig.items():
-                new[key] = cls.build(value)
-            return new
+            return cls.build(orig)
         return orig
+
+    @classmethod
+    def build(cls, orig):
+        new = cls()
+        for key, value in orig.items():
+            new[key] = cls._build(value)
+        return new
 
 
 def _load_yaml(filename):

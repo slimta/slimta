@@ -28,7 +28,7 @@ with open('LICENSE.md') as f:
     license = f.read()
 
 setup(name='slimta',
-      version='0.8.0',
+      version='0.8.1',
       author='Ian Good',
       author_email='ian@icgood.net',
       description='Configurable MTA based on the python-slimta library.',

@@ -25,7 +25,7 @@ from functools import wraps
 
 from slimta.edge.smtp import SmtpValidators
 from slimta.edge.wsgi import WsgiValidators, WsgiResponse
-from slimta.util.dnsbl import check_dnsbl, DnsBlocklistGroup
+from slimta.util.dnsbl import check_dnsbl, DnsBlocklist, DnsBlocklistGroup
 from slimta.util.spf import EnforceSpf
 from slimta.lookup.drivers.dict import DictLookup
 from slimta.lookup.drivers.regex import RegexLookup
@@ -121,7 +121,11 @@ class RuleHelpers(object):
                     blgroup.add_dnsbl(bl)
                 return check_dnsbl(blgroup, match_code='520')
             else:
-                return check_dnsbl(self.dnsbl, match_code='520')
+                if isinstance(self.dnsbl, str):
+                    bl = self.dnsbl
+                else:
+                    bl = DnsBlocklist(self.dnsbl.address, self.dnsbl.ignore)
+                return check_dnsbl(bl, match_code='520')
         return self._noop_decorator
 
     def get_mail_decorator(self):

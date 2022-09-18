@@ -126,7 +126,7 @@ class ConfigValidation(object):
             self._check_keys(opts.tls, tls_keydict, stack+['tls'])
         if 'rules' in opts:
             rules_keydict = {'banner': (str, False),
-                             'dnsbl': ((str, Sequence), False),
+                             'dnsbl': ((str, Sequence, Mapping), False),
                              'reject_spf': (Sequence, False),
                              'lookup_senders': (Mapping, False),
                              'lookup_recipients': (Mapping, False),
@@ -138,6 +138,12 @@ class ConfigValidation(object):
                              'password_hash': (str, False),
                              'reject_spam': (Mapping, False)}
             self._check_keys(opts.rules, rules_keydict, stack+['rules'], True)
+            if 'dnsbl' in opts.rules:
+                if isinstance(opts.rules.dnsbl, Mapping):
+                    dnsbl_keydict = {'address': (str, True),
+                                     'ignore': (Sequence, False)}
+                    self._check_keys(opts.rules.dnsbl, dnsbl_keydict,
+                                     stack+['dnsbl'])
             if 'lookup_sender' in opts.rules:
                 self._check_lookup(opts.rules.lookup_sender,
                                    stack+['lookup_sender'])

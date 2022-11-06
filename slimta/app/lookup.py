@@ -19,8 +19,6 @@
 # THE SOFTWARE.
 #
 
-from passlib import apps
-
 from .validation import ConfigValidationError
 
 
@@ -75,13 +73,6 @@ def load_lookup(options):
     else:
         msg = 'lookup type does not exist: '+options.type
         raise ConfigValidationError(msg)
-
-
-def get_hash_context(name):
-    if not name:
-        return apps.ldap_context
-    else:
-        return getattr(apps, name + '_context')
 
 
 # vim:et:fdm=marker:sts=4:sw=4:ts=4

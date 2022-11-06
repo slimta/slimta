@@ -28,7 +28,7 @@ with open('LICENSE.md') as f:
     license = f.read()
 
 setup(name='slimta',
-      version='0.8.1',
+      version='0.9.0',
       author='Ian Good',
       author_email='ian@icgood.net',
       description='Configurable MTA based on the python-slimta library.',
@@ -36,7 +36,7 @@ setup(name='slimta',
       long_description_content_type='text/markdown',
       license='MIT',
       url='http://slimta.org/',
-      python_requires='~=3.9',
+      python_requires='~=3.11',
       include_package_data=True,
       packages=find_namespace_packages(include=['slimta.*']),
       install_requires=['python-slimta[spf] ~= 5.0', 'passlib', 'PyYAML'],

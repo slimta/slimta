@@ -23,6 +23,8 @@ import math
 import socket
 from functools import wraps
 
+from pysasl.hashing import get_hash
+from pysasl.identity import HashedIdentity
 from slimta.edge.smtp import SmtpValidators
 from slimta.edge.wsgi import WsgiValidators, WsgiResponse
 from slimta.util.dnsbl import check_dnsbl, DnsBlocklist, DnsBlocklistGroup
@@ -37,7 +39,7 @@ from slimta.policy.spamassassin import SpamAssassin
 from slimta.policy.headers import AddDateHeader, AddMessageIdHeader, \
     AddReceivedHeader
 
-from .lookup import load_lookup, get_hash_context
+from .lookup import load_lookup
 from .validation import ConfigValidationError
 
 
@@ -66,7 +68,7 @@ class RuleHelpers(object):
                                              'only_recipients',
                                              'regex_recipients')
         self.lookup_creds = load_lookup(rules.lookup_credentials)
-        self.password_hash = get_hash_context(rules.password_hash)
+        self.password_hash = get_hash(rules.passlib_config)
         self.reject_spf = rules.reject_spf
         self.scanner = self._get_scanner(rules.reject_spam)
 
@@ -97,7 +99,9 @@ class RuleHelpers(object):
                                                authzid=creds.authzid)
         if not ret or 'password' not in ret:
             return False
-        if not self.password_hash.verify(creds.secret, ret['password']):
+        identity = HashedIdentity(creds.authcid, ret['password'],
+                                  hash=self.password_hash)
+        if not creds.verify(identity):
             return False
         return True
 

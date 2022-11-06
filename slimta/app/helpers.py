@@ -68,7 +68,7 @@ class RuleHelpers(object):
                                              'only_recipients',
                                              'regex_recipients')
         self.lookup_creds = load_lookup(rules.lookup_credentials)
-        self.password_hash = get_hash(rules.passlib_config)
+        self.password_hash = get_hash(passlib_config=rules.passlib_config)
         self.reject_spf = rules.reject_spf
         self.scanner = self._get_scanner(rules.reject_spam)
 

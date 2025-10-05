@@ -27,6 +27,7 @@ from string import Template
 from argparse import ArgumentParser
 
 from . import __version__
+from .helpers import is_running_as_admin
 
 
 def _confirm_overwrite(path, force=False):
@@ -56,7 +57,7 @@ def _try_config_copy(etc_dir, conf_file, force):
 def _setup_configs(parser, args):
     etc_dir = args.etc_dir
     default_etc_dir = '/etc/slimta'
-    if os.getuid() != 0:
+    if not is_running_as_admin():
         default_etc_dir = '~/.slimta/'
     if etc_dir is None:
         etc_dir = input(

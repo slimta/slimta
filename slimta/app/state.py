@@ -38,6 +38,7 @@ from .config import try_configs
 from .importutil import custom_factory
 from .listeners import Listeners
 from .logging import setup_logging
+from .helpers import is_running_as_admin
 
 try:
     from slimta.util import build_ipv4_socket_creator
@@ -121,7 +122,7 @@ class SlimtaState(object):
         user = process_options.user
         group = process_options.group
         if user or group:
-            if os.getuid() == 0:
+            if is_running_as_admin():
                 system.drop_privileges(user, group)
             else:
                 warnings.warn('Only superuser can drop privileges.')

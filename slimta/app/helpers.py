@@ -20,6 +20,7 @@
 #
 
 import math
+import os
 import socket
 from functools import wraps
 
@@ -263,6 +264,24 @@ def build_backoff_function(retry):
 
 def get_relay_credentials(creds):
     return (creds.username, creds.password)
+
+
+def is_running_as_admin():
+    """Check if the current process is running with administrative privileges.
+
+    Returns True if running as root on Unix-like systems or as Administrator on
+    Windows. Returns False otherwise.
+    """
+    try:
+        # Unix-like systems (Linux, macOS, etc.)
+        if hasattr(os, 'getuid'):
+            return os.getuid() == 0
+        # Windows
+        else:
+            import ctypes
+            return ctypes.windll.shell32.IsUserAnAdmin() != 0
+    except Exception:
+        return False
 
 
 # vim:et:fdm=marker:sts=4:sw=4:ts=4
